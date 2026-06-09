@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Acme Gym — pretend customer site</title>
+    <!-- Deliberately clashing host styles to prove the widget stays isolated. -->
+    <style>
+      * { box-sizing: border-box; }
+      body {
+        font-family: Georgia, "Times New Roman", serif;
+        color: #333;
+        background: #fbf7ef;
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 48px 24px;
+        line-height: 1.7;
+      }
+      h1 { color: #b5651d; font-size: 42px; }
+      button { background: hotpink; color: white; padding: 12px 20px; border: 3px dashed purple; font-size: 18px; }
+      a { color: crimson; }
+    </style>
+  </head>
+  <body>
+    <h1>Acme Gym</h1>
+    <p>
+      This is a pretend customer website with its own (ugly) styles — serif font,
+      hotpink buttons, crimson links. The Navio widget is loaded with a single
+      <code>&lt;script&gt;</code> tag below. It should appear bottom-right, look
+      exactly like our brand (not inherit these styles), and show the Datenschutz
+      consent before any chat.
+    </p>
+    <button>A host-site button (hotpink on purpose)</button>
+    <p><a href="#">A host-site link</a></p>
+
+    <!-- The one line a customer pastes: -->
+    <script
+      src="/dist-widget/navio-widget.js"
+      data-api="http://localhost:8000"
+      data-policy-url="https://www.sportnavi.de/datenschutz/"
+    ></script>
+  </body>
+</html>

@@ -1,0 +1,9 @@
+# Build context is ./backend. Keep the image lean.
+.env
+__pycache__/
+*.pyc
+.venv/
+venv/
+env/
+README.md
+chatbot.py

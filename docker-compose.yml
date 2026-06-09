@@ -1,0 +1,91 @@
+# =============================================================================
+# Navio — self-contained deployment for a dedicated server.
+#
+#   internet ──▶ Caddy (auto-HTTPS, the only public entry)
+#                  └─▶ navio (FastAPI, multiple workers)
+#                         └─▶ redis (shared rate-limit counters, internal only)
+#
+# Usage:
+#   docker compose up -d --build      # start everything
+#   docker compose logs -f navio      # watch the app
+#   docker compose down               # stop
+#
+# Set NAVIO_DOMAIN in .env to your domain for public HTTPS (e.g. navio.sportnavi.de),
+# or leave it as ":80" for local/plain-HTTP testing.
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # Caddy — reverse proxy, automatic HTTPS, single public entry point
+  # ---------------------------------------------------------------------------
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - NAVIO_DOMAIN=${NAVIO_DOMAIN:-:80}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      navio:
+        condition: service_healthy
+    networks:
+      - navio-net
+
+  # ---------------------------------------------------------------------------
+  # Navio — the FastAPI backend (built from the existing Dockerfile)
+  # ---------------------------------------------------------------------------
+  navio:
+    build: ./backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      # Turn on shared rate limits + worker count. These override the (empty)
+      # values in .env so the in-container app uses Redis automatically.
+      - REDIS_URL=redis://redis:6379
+      - WEB_CONCURRENCY=${WORKERS:-2}      # uvicorn reads this = number of workers
+    expose:
+      - "8000"                              # internal only; Caddy reaches it
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - "CMD"
+        - "python"
+        - "-c"
+        - "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/health').getcode()==200 else 1)"
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
+    networks:
+      - navio-net
+
+  # ---------------------------------------------------------------------------
+  # Redis — shared rate-limit store (internal only, no persistence needed)
+  # ---------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    # Rate-limit counters are disposable -> disable saving to disk (faster, simpler).
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - navio-net      # not exposed to the host or internet — only Navio can reach it
+
+volumes:
+  caddy-data:
+  caddy-config:
+
+networks:
+  navio-net:

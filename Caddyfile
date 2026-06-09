@@ -1,0 +1,8 @@
+# Navio reverse proxy.
+# NAVIO_DOMAIN comes from .env:
+#   - a real domain (e.g. navio.sportnavi.de) -> Caddy auto-issues a free HTTPS cert
+#   - ":80" -> plain HTTP, for local/testing
+{$NAVIO_DOMAIN} {
+	encode gzip
+	reverse_proxy navio:8000
+}
