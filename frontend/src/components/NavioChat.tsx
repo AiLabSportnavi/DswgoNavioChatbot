@@ -12,11 +12,26 @@ type Msg = {
   intro?: boolean
 }
 
+// Non-technical trust points, shown German first then English (mirrors the
+// bilingual greeting). No model/infra details here — this is the visitor-facing
+// info panel, not the developer page.
 const ADVANTAGES = [
-  'Answers 24/7 in German & English',
-  'Grounded only in the official Sportnavi knowledge base',
-  'Helps members, companies & partners',
-  'Powered by Azure gpt-4.1 — your key stays server-side',
+  {
+    de: 'Schreib in jeder Sprache – Navio antwortet in deiner',
+    en: 'Write in any language — Navio replies in yours',
+  },
+  {
+    de: 'Antwortet nur mit offiziellen Sportnavi-Infos – erfindet nichts',
+    en: 'Answers only from official Sportnavi info — never invents facts',
+  },
+  {
+    de: 'DSGVO-konform – deine Zustimmung vor jedem Chat',
+    en: 'EU / GDPR-compliant — your consent before every chat',
+  },
+  {
+    de: 'Hilft Mitgliedern, Firmen & Partnern – rund um die Uhr',
+    en: 'Helps members, companies & partners — around the clock',
+  },
 ]
 
 export default function NavioChat({
@@ -147,29 +162,32 @@ export default function NavioChat({
             <h3 className="font-display text-base font-semibold text-ink">About {bot.name}</h3>
             <p className="mt-1.5 text-sm leading-relaxed text-zinc-600">{bot.tagline}</p>
           </div>
-          <ul className="space-y-2">
+          <ul className="space-y-2.5">
             {ADVANTAGES.map((a) => (
-              <li key={a} className="flex items-start gap-2 text-sm text-zinc-700">
+              <li key={a.de} className="flex items-start gap-2 text-sm">
                 <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-brand-green/20 text-ink">
                   <Check className="h-3 w-3" />
                 </span>
-                {a}
+                <span>
+                  <span className="text-zinc-700">{a.de}</span>
+                  <span className="block text-xs text-zinc-400">{a.en}</span>
+                </span>
               </li>
             ))}
           </ul>
           <p className="text-xs text-zinc-400">
-            Your inputs are processed per our{' '}
+            Deine Eingaben werden gemäß unserer{' '}
             <a href={policyUrl} target="_blank" rel="noreferrer" className="underline">
-              Privacy Policy
-            </a>
-            .
+              Datenschutzerklärung / Privacy Policy
+            </a>{' '}
+            verarbeitet.
           </p>
           <button
             type="button"
             onClick={() => setShowInfo(false)}
             className="rounded-full bg-ink px-4 py-2 text-sm lowercase text-white"
           >
-            back to chat
+            zurück zum Chat
           </button>
         </div>
       ) : !consented ? (
@@ -283,7 +301,7 @@ export default function NavioChat({
             onChange={(e) => setInput(e.target.value)}
             disabled={!consented}
             maxLength={MAX_MESSAGE_CHARS}
-            placeholder={consented ? 'ask navio…' : 'Bitte Datenschutz akzeptieren'}
+            placeholder={consented ? 'Frage Navio …' : 'Bitte Datenschutz akzeptieren'}
             className="flex-1 rounded-full bg-bg-base px-4 py-2 text-sm text-ink placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-brand-green/40 disabled:cursor-not-allowed"
           />
           <button

@@ -8,6 +8,7 @@ Run:  python chatbot.py
 """
 
 import os
+import re
 import sys
 import warnings
 from pathlib import Path
@@ -26,6 +27,17 @@ for _stream in (sys.stdout, sys.stderr):
         pass
 
 SYSTEM_PROMPT = (Path(__file__).parent / "SYSTEM_PROMPT.md").read_text(encoding="utf-8")
+
+# The model sometimes ignores the prompt's spelling rule and writes "SportNavi".
+# Enforce the canonical "Sportnavi" deterministically; keep lowercase "sportnavi"
+# so domains/emails (sportnavi.de, info@sportnavi.de) stay valid.
+_BRAND_RE = re.compile(r"sportnavi", re.IGNORECASE)
+
+
+def normalize_brand(text: str) -> str:
+    return _BRAND_RE.sub(
+        lambda m: m.group(0) if m.group(0) == "sportnavi" else "Sportnavi", text
+    )
 
 
 def main() -> None:
@@ -65,6 +77,7 @@ def main() -> None:
             temperature=0.4,
             messages=messages,
         ).choices[0].message.content.strip()
+        reply = normalize_brand(reply)
         messages.append({"role": "assistant", "content": reply})
         print(f"\nNavio: {reply}\n")
 

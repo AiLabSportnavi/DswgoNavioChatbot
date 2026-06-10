@@ -106,7 +106,7 @@ const ENV_VARS: [string, string, string][] = [
 
 const QUICKREF: [string, ReactNode][] = [
   ['Model', <>Azure OpenAI <Code2>gpt-4.1</Code2></>],
-  ['Languages', 'German & English (auto-detected per message)'],
+  ['Languages', 'Any language — auto-detected per message'],
   ['Chat endpoint', <Code2>POST /api/chat</Code2>],
   ['Default rate limits', '15/min, 300/day per IP'],
   ['Input caps', '2000 chars/message, 10 history turns'],
@@ -410,7 +410,7 @@ export default function BotDetail({ id }: { id: string }) {
             <p className="mt-6 max-w-2xl text-lg leading-relaxed text-zinc-300">
               The friendly digital assistant on the Sportnavi website — Germany’s corporate-fitness
               network. Like a <span className="text-brand-green">navi</span>gator, Navio guides every
-              visitor safely to the right answer, day or night, in German or English.
+              visitor safely to the right answer, day or night, in any language.
             </p>
 
             <div className="mt-7 flex flex-wrap gap-3">
@@ -452,7 +452,7 @@ export default function BotDetail({ id }: { id: string }) {
             '🛡 only official Sportnavi content',
             '🔒 consent before every chat',
             '🕑 24/7 available',
-            '🇩🇪 🇬🇧 German & English',
+            '🌍 any language',
             '🤖 Azure OpenAI · gpt-4.1',
           ].map((c) => (
             <span key={c} className="rounded-full border border-brand-green/30 bg-brand-green/10 px-4 py-2 text-[13.5px] font-medium text-ink">
@@ -476,8 +476,8 @@ export default function BotDetail({ id }: { id: string }) {
             membership, people can use thousands of sport and wellness offers — gyms, swimming pools, yoga, climbing, massage, and more.
           </p>
           <p className="text-[17px] leading-relaxed text-zinc-600">
-            Navio’s job is simple: <b className="text-ink">answer visitors’ questions in plain language, day or night, in German
-            or English.</b> Think of it as a helpful guide standing at the door of Sportnavi who never gets tired and always knows where things are.
+            Navio’s job is simple: <b className="text-ink">answer visitors’ questions in plain language, day or night, in any
+            language.</b> Think of it as a helpful guide standing at the door of Sportnavi who never gets tired and always knows where things are.
           </p>
           <p className="text-[17px] leading-relaxed text-zinc-600">
             The name says it all — like a <b className="text-ink">navi</b>gator, Navio guides people safely to the right answer.

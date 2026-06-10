@@ -23,6 +23,7 @@ import base64
 import hashlib
 import hmac
 import os
+import re
 import time
 import warnings
 from pathlib import Path
@@ -159,6 +160,23 @@ def friendly_ai_reply(e: Exception) -> str | None:
         # Transient: timeout, dropped connection, rate limit, upstream hiccup.
         return _UNAVAILABLE_REPLY
     return None
+
+
+# ---------------------------------------------------------------------------
+# Brand spelling normalization
+# ---------------------------------------------------------------------------
+# The model is heavily biased by its training data toward "SportNavi"/"SPORTNAVI"
+# and ignores the prompt's spelling rule every so often. We enforce the canonical
+# "Sportnavi" deterministically on the way out. Lowercase "sportnavi" is left
+# untouched so domains and emails (sportnavi.de, info@sportnavi.de) stay valid.
+_BRAND_RE = re.compile(r"sportnavi", re.IGNORECASE)
+
+
+def normalize_brand(text: str) -> str:
+    """Rewrite every cased variant of the brand to "Sportnavi" (lowercase kept)."""
+    return _BRAND_RE.sub(
+        lambda m: m.group(0) if m.group(0) == "sportnavi" else "Sportnavi", text
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -395,6 +413,7 @@ def chat(
             raise
         reply = friendly
         finish_reason = "content_filter" if isinstance(e, BadRequestError) else "error"
+    reply = normalize_brand(reply)
     latency_ms = int((time.perf_counter() - started) * 1000)
 
     # Log the turn for monitoring — fire-and-forget AFTER the response is sent, so

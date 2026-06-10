@@ -41,19 +41,19 @@ export const BOTS: Chatbot[] = [
       'Your friendly guide to Sportnavi — finds sport & wellness offers, answers membership questions, and helps companies and partners get started.',
     tagline:
       'Navio is your friendly guide through Sportnavi — Germany’s corporate-fitness network. Ask about offers, memberships, partners, or bringing Sportnavi to your company.',
-    lang: 'de · en',
+    lang: 'any language',
     category: 'support',
     status: 'live',
     stats: [
       { value: 'gpt-4.1', label: 'azure openai' },
-      { value: 'de · en', label: 'languages' },
+      { value: 'any', label: 'language' },
       { value: '24/7', label: 'always on' },
     ],
     capabilities: [
       { icon: Compass, title: 'Find offers', body: 'Points members to gyms, pools, yoga, climbing and wellness across the network.' },
       { icon: CreditCard, title: 'Membership & check-in', body: 'Explains plans, QR / app check-in, and cancellation in plain language.' },
       { icon: Briefcase, title: 'Companies & partners', body: 'Guides employers on the benefit, and studios on joining the network.' },
-      { icon: Globe, title: 'German & English', body: 'Replies in the visitor’s language, grounded only in the knowledge base.' },
+      { icon: Globe, title: 'Speaks your language', body: 'Write in any language — Navio replies in yours, grounded only in the official Sportnavi knowledge base.' },
     ],
     greeting: `Hi, ich bin Navio 👋🏻
 Dein Guide durch die Sportnavi Welt. Wobei kann ich dir helfen?
@@ -61,10 +61,10 @@ Dein Guide durch die Sportnavi Welt. Wobei kann ich dir helfen?
 Hi, I’m Navio 👋🏻
 Your guide through the Sportnavi world. How can I help you?`,
     quickReplies: [
-      'Find sport & wellness offers',
-      'How do I check in?',
-      'Become a partner',
-      'Sportnavi for companies',
+      'Angebote finden',
+      'Wie checke ich ein?',
+      'Partner werden',
+      'Sportnavi für Firmen',
     ],
     repo: {
       name: 'AiLabSportnavi/DswgoNavioChatbot',
