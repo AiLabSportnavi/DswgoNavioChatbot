@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>P-CATION / LIVOI — Design Card</title>
+<style>
+  :root{
+    --brand-50:#EDF8FF;--brand-100:#D6EFFF;--brand-500:#0D9DDB;--brand-600:#0B8AC2;
+    --brand-700:#086E9C;--brand-800:#065A80;
+    --slate-900:#0F172A;--slate-700:#334155;--slate-600:#475569;--slate-500:#64748B;
+    --slate-400:#94A3B8;--slate-200:#E2E8F0;--slate-100:#F1F5F9;--slate-50:#F8FAFC;
+    --success:#25D366;--orange:#EC6607;
+    --font:"Exo 2","Trebuchet MS","Segoe UI",sans-serif;
+    --radius:20px;--grad:linear-gradient(90deg,#0D9DDB,#086E9C);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--font);background:var(--slate-50);color:var(--slate-900);padding:48px;width:1240px}
+  .card{background:#fff;border:1px solid var(--slate-200);border-radius:28px;
+    box-shadow:0 24px 60px -20px rgba(13,157,219,.25);overflow:hidden}
+  .header{background:var(--grad);color:#fff;padding:40px 48px;position:relative}
+  .header .eyebrow{font-size:13px;letter-spacing:.18em;text-transform:uppercase;opacity:.85;font-weight:600}
+  .header h1{font-size:46px;font-weight:700;margin-top:8px;letter-spacing:-.01em}
+  .header p{margin-top:10px;font-size:16px;opacity:.92;max-width:620px;line-height:1.5}
+  .logo{position:absolute;top:40px;right:48px;font-weight:700;font-size:22px;letter-spacing:.02em}
+  .logo span{opacity:.7}
+  .body{padding:40px 48px;display:grid;grid-template-columns:1.15fr 1fr;gap:40px}
+  .eyebrow{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--brand-600);font-weight:700;margin-bottom:16px}
+  .block{margin-bottom:34px}
+  /* swatches */
+  .swatches{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  .sw{border-radius:14px;overflow:hidden;border:1px solid var(--slate-200)}
+  .sw .chip{height:64px}
+  .sw .meta{padding:8px 10px;font-size:11px}
+  .sw .name{font-weight:600;color:var(--slate-700)}
+  .sw .hex{color:var(--slate-500);font-family:ui-monospace,monospace;font-size:10.5px}
+  .neutrals{display:flex;border-radius:12px;overflow:hidden;border:1px solid var(--slate-200);margin-top:14px}
+  .neutrals div{flex:1;height:40px;display:flex;align-items:flex-end;justify-content:center;padding-bottom:4px;font-size:9px;font-family:ui-monospace,monospace}
+  /* type */
+  .type-row{display:flex;align-items:baseline;gap:16px;border-bottom:1px solid var(--slate-100);padding:12px 0}
+  .type-row .lbl{width:90px;font-size:11px;color:var(--slate-400);text-transform:uppercase;letter-spacing:.08em;flex-shrink:0}
+  .h1-demo{font-size:38px;font-weight:700;letter-spacing:-.01em}
+  .h2-demo{font-size:24px;font-weight:700}
+  .body-demo{font-size:15px;color:var(--slate-600)}
+  .eye-demo{font-size:12px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--brand-600)}
+  /* buttons */
+  .btns{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+  .btn{border:none;font-family:var(--font);font-size:14px;font-weight:600;padding:12px 22px;border-radius:9999px;cursor:pointer;display:inline-flex;align-items:center;gap:9px}
+  .btn-primary{background:var(--grad);color:#fff;box-shadow:0 8px 20px -6px rgba(13,157,219,.6)}
+  .btn-primary .dot{width:20px;height:20px;border-radius:50%;background:var(--success);display:inline-block}
+  .btn-outline{background:#fff;border:1px solid var(--slate-200);color:var(--slate-700)}
+  .btn-ghost{background:none;color:var(--brand-600);padding:8px 0}
+  /* trust chips */
+  .chips{display:flex;flex-wrap:wrap;gap:10px;margin-top:6px}
+  .tchip{background:var(--brand-50);color:var(--brand-700);border:1px solid var(--brand-100);border-radius:9999px;padding:7px 14px;font-size:12.5px;font-weight:600}
+  /* mini card */
+  .mini{background:#fff;border:1px solid var(--slate-200);border-radius:var(--radius);padding:18px;box-shadow:0 10px 30px -16px rgba(15,23,42,.2)}
+  .mini .ico{width:40px;height:40px;border-radius:12px;background:var(--brand-50);display:flex;align-items:center;justify-content:center;font-size:18px;margin-bottom:12px}
+  .mini h4{font-size:16px;margin-bottom:6px}
+  .mini p{font-size:13px;color:var(--slate-500);line-height:1.5}
+  .footer{padding:18px 48px;background:var(--slate-50);border-top:1px solid var(--slate-200);font-size:12px;color:var(--slate-500);display:flex;justify-content:space-between}
+  .footer code{font-family:ui-monospace,monospace;color:var(--slate-600)}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="header">
+    <div class="logo">//<span>P-CATION</span></div>
+    <div class="eyebrow">Design Card</div>
+    <h1>P-CATION &middot; LIVOI</h1>
+    <p>GDPR-compliant AI assistant for the German Mittelstand. Clean, bright, corporate-tech — built to earn trust in a regulated market.</p>
+  </div>
+
+  <div class="body">
+    <!-- LEFT COLUMN -->
+    <div>
+      <div class="block">
+        <div class="eyebrow">Brand Palette</div>
+        <div class="swatches">
+          <div class="sw"><div class="chip" style="background:#EDF8FF"></div><div class="meta"><div class="name">brand-50</div><div class="hex">#EDF8FF</div></div></div>
+          <div class="sw"><div class="chip" style="background:#0D9DDB"></div><div class="meta"><div class="name">brand-500</div><div class="hex">#0D9DDB</div></div></div>
+          <div class="sw"><div class="chip" style="background:#0B8AC2"></div><div class="meta"><div class="name">brand-600</div><div class="hex">#0B8AC2</div></div></div>
+          <div class="sw"><div class="chip" style="background:#086E9C"></div><div class="meta"><div class="name">brand-700</div><div class="hex">#086E9C</div></div></div>
+        </div>
+        <div class="neutrals">
+          <div style="background:#F8FAFC;color:#64748B">50</div>
+          <div style="background:#F1F5F9;color:#64748B">100</div>
+          <div style="background:#E2E8F0;color:#475569">200</div>
+          <div style="background:#94A3B8;color:#fff">400</div>
+          <div style="background:#64748B;color:#fff">500</div>
+          <div style="background:#475569;color:#fff">600</div>
+          <div style="background:#334155;color:#fff">700</div>
+          <div style="background:#0F172A;color:#fff">900</div>
+        </div>
+        <div class="chips" style="margin-top:14px">
+          <span class="tchip" style="background:rgba(37,211,102,.12);color:#1a9e4b;border-color:rgba(37,211,102,.3)">● success #25D366</span>
+          <span class="tchip" style="background:rgba(236,102,7,.12);color:#c4540a;border-color:rgba(236,102,7,.3)">● mascot #EC6607</span>
+        </div>
+      </div>
+
+      <div class="block">
+        <div class="eyebrow">Typography &mdash; Exo 2</div>
+        <div class="type-row"><span class="lbl">Eyebrow</span><span class="eye-demo">Sicherheit</span></div>
+        <div class="type-row"><span class="lbl">H1 / 72&middot;700</span><span class="h1-demo">Wir ändern das.</span></div>
+        <div class="type-row"><span class="lbl">H2 / 700</span><span class="h2-demo">So arbeitet LIVOI</span></div>
+        <div class="type-row"><span class="lbl">Body / 400</span><span class="body-demo">Jede Antwort ist mit einem Klick auf die Originalquellen zurückführbar.</span></div>
+      </div>
+
+      <div class="block">
+        <div class="eyebrow">Trust Chips</div>
+        <div class="chips">
+          <span class="tchip">🛡 DSGVO Konform</span>
+          <span class="tchip">⚖ EU-KI-Verordnung</span>
+          <span class="tchip">🇩🇪 Gehostet in Deutschland</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT COLUMN -->
+    <div>
+      <div class="block">
+        <div class="eyebrow">Buttons</div>
+        <div class="btns">
+          <button class="btn btn-primary"><span class="dot"></span>KI-Einschätzung erhalten</button>
+          <button class="btn btn-outline">Gespräch vereinbaren</button>
+          <button class="btn btn-ghost">Mehr erfahren →</button>
+        </div>
+      </div>
+
+      <div class="block">
+        <div class="eyebrow">Card</div>
+        <div class="mini">
+          <div class="ico">🔒</div>
+          <h4>Geschützte Architektur</h4>
+          <p>Getrennte Kundenumgebungen, Hosting in Deutschland und klare Datenhoheit mit Rollen- und Rechte-Konzept.</p>
+        </div>
+      </div>
+
+      <div class="block">
+        <div class="eyebrow">Tokens</div>
+        <div class="mini" style="font-family:ui-monospace,monospace;font-size:12px;line-height:1.9;color:var(--slate-600)">
+          --radius-card: <b style="color:var(--slate-900)">20px</b><br>
+          --radius-pill: <b style="color:var(--slate-900)">9999px</b><br>
+          --grad: <b style="color:var(--brand-700)">90deg #0D9DDB→#086E9C</b><br>
+          --font: <b style="color:var(--slate-900)">"Exo 2", sans-serif</b><br>
+          shadow: <b style="color:var(--slate-900)">0 24px 60px -20px brand/25%</b>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <span>Reverse-engineered from <code>https://p-cation.de/</code></span>
+    <span>Captured 2026-06-09</span>
+  </div>
+</div>
+</body>
+</html>

@@ -12,6 +12,14 @@ dist
 dist-ssr
 *.local
 
+# Env files — never commit secrets / local keys.
+# Exception: .env.production holds only the PUBLIC Clerk publishable key (baked
+# into the browser bundle anyway), so it IS committed for reproducible builds.
+.env
+.env.*
+!.env.example
+!.env.production
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

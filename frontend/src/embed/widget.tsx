@@ -14,7 +14,12 @@ const FONTS_HREF =
 function mount() {
   if (document.getElementById('navio-widget-host')) return // guard against double-load
 
-  const apiBase = SCRIPT?.getAttribute('data-api') ?? ''
+  // Backend origin: prefer an explicit data-api, otherwise derive it from the
+  // origin this very <script> was served from. That origin proxies /api -> backend,
+  // so the embed "just works" wherever it's hosted — no hardcoded backend URL needed.
+  const explicitApi = SCRIPT?.getAttribute('data-api')
+  const derivedApi = SCRIPT?.src ? new URL(SCRIPT.src).origin : ''
+  const apiBase = explicitApi || derivedApi
   const policyUrl = SCRIPT?.getAttribute('data-policy-url') ?? undefined
   if (apiBase) setApiBase(apiBase)
 

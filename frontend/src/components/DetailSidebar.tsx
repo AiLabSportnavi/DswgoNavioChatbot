@@ -38,7 +38,7 @@ export default function DetailSidebar({
       <div>
         <div className="flex items-center gap-2">
           <Clover className="h-4 w-4 text-ink" />
-          <span className="font-display text-sm tracking-tight text-ink">SportNavi</span>
+          <span className="font-display text-sm tracking-tight text-ink">Sportnavi</span>
         </div>
         <div className="mt-4 flex items-center gap-3">
           <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-green/15 text-ink">

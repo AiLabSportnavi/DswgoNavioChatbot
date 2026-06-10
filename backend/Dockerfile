@@ -11,8 +11,9 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # App code + the baked system prompt (NOT .env — secrets are passed at runtime).
-COPY app.py .
-COPY SYSTEM_PROMPT.md .
+# Copy all Python modules so local imports (e.g. supabase_client) resolve.
+COPY *.py ./
+COPY SYSTEM_PROMPT.md ./
 
 EXPOSE 8000
 

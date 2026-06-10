@@ -33,6 +33,23 @@ services:
     depends_on:
       navio:
         condition: service_healthy
+      frontend:
+        condition: service_started
+    networks:
+      - navio-net
+
+  # ---------------------------------------------------------------------------
+  # Frontend — React SPA + embeddable widget, served by nginx (built from
+  # frontend/Dockerfile). Caddy routes everything except /api + /health here.
+  # ---------------------------------------------------------------------------
+  frontend:
+    # The Clerk publishable key is baked in from frontend/.env.production at build
+    # time (Vite) — no build args needed; same path as the Cloud Run deploy.
+    build:
+      context: ./frontend
+    restart: unless-stopped
+    expose:
+      - "8080"                              # internal only; Caddy reaches it
     networks:
       - navio-net
 
@@ -51,6 +68,12 @@ services:
       - WEB_CONCURRENCY=${WORKERS:-2}      # uvicorn reads this = number of workers
     expose:
       - "8000"                              # internal only; Caddy reaches it
+    ports:
+      # Published to localhost so the Vite dev server (npm run dev) can proxy
+      # /api -> http://127.0.0.1:8000 (see frontend/vite.config.ts). In a pure
+      # production deploy you can drop this — Caddy reaches navio over the
+      # internal network regardless.
+      - "127.0.0.1:8000:8000"
     depends_on:
       redis:
         condition: service_healthy

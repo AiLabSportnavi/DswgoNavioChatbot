@@ -1,13 +1,12 @@
 import { motion } from 'motion/react'
 import PillButton from './PillButton'
 import GhostPill from './GhostPill'
-import { MessageSquare, Code, Globe } from './icons'
+import { Code, Globe } from './icons'
 
 const VIDEO_URL =
   'https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260603_132049_036591b8-6e92-4760-b94c-a7ea6eef315c.mp4'
 
 const STATS = [
-  { icon: MessageSquare, label: '12+ chatbot versions' },
   { icon: Code, label: 'embed in 1 line' },
   { icon: Globe, label: 'german + english' },
 ]
@@ -71,7 +70,7 @@ export default function Hero() {
           animate="show"
           className="mt-6 max-w-xl text-base text-zinc-700 md:text-lg"
         >
-          Drop a ready-made SportNavi chatbot onto any website in minutes. No complex setup,
+          Drop a ready-made Sportnavi chatbot onto any website in minutes. No complex setup,
           just seamless integration.
         </motion.p>
 

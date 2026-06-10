@@ -1,0 +1,11 @@
+node_modules
+dist
+dist-ssr
+.git
+*.log
+.vscode
+.idea
+# Keep the gitignored dev .env out of images; .env.production (committed) IS used.
+.env
+.env.local
+.env.*.local

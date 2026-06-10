@@ -5,7 +5,7 @@ const FEATURES = [
   {
     icon: Bot,
     title: 'pick a bot',
-    body: 'Choose from over 12 specialized Navio bots designed for different sports and booking scenarios.',
+    body: 'Open the hub and choose Navio — your ready-made Sportnavi guide for members, companies, and partners. More bots are on the way.',
   },
   {
     icon: Copy,

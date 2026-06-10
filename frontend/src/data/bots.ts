@@ -38,9 +38,9 @@ export const BOTS: Chatbot[] = [
     icon: Bot,
     role: 'your sportnavi guide',
     description:
-      'Your friendly guide to SportNavi — finds sport & wellness offers, answers membership questions, and helps companies and partners get started.',
+      'Your friendly guide to Sportnavi — finds sport & wellness offers, answers membership questions, and helps companies and partners get started.',
     tagline:
-      'Navio is your friendly guide through SportNavi — Germany’s corporate-fitness network. Ask about offers, memberships, partners, or bringing SportNavi to your company.',
+      'Navio is your friendly guide through Sportnavi — Germany’s corporate-fitness network. Ask about offers, memberships, partners, or bringing Sportnavi to your company.',
     lang: 'de · en',
     category: 'support',
     status: 'live',
@@ -55,13 +55,16 @@ export const BOTS: Chatbot[] = [
       { icon: Briefcase, title: 'Companies & partners', body: 'Guides employers on the benefit, and studios on joining the network.' },
       { icon: Globe, title: 'German & English', body: 'Replies in the visitor’s language, grounded only in the knowledge base.' },
     ],
-    greeting:
-      'Hi, I’m Navio 👋 your friendly guide through the SportNavi world. How can I help — finding offers, your membership, or becoming a partner?',
+    greeting: `Hi, ich bin Navio 👋🏻
+Dein Guide durch die Sportnavi Welt. Wobei kann ich dir helfen?
+
+Hi, I’m Navio 👋🏻
+Your guide through the Sportnavi world. How can I help you?`,
     quickReplies: [
       'Find sport & wellness offers',
       'How do I check in?',
       'Become a partner',
-      'SportNavi for companies',
+      'Sportnavi for companies',
     ],
     repo: {
       name: 'AiLabSportnavi/DswgoNavioChatbot',

@@ -1,8 +1,17 @@
-# Navio reverse proxy.
+# Navio reverse proxy — single public entry for the whole stack.
 # NAVIO_DOMAIN comes from .env:
 #   - a real domain (e.g. navio.sportnavi.de) -> Caddy auto-issues a free HTTPS cert
 #   - ":80" -> plain HTTP, for local/testing
+#
+# Routing: API calls go to the FastAPI backend; everything else (the SPA, the
+# embeddable widget JS, static assets) goes to the frontend nginx container.
 {$NAVIO_DOMAIN} {
 	encode gzip
-	reverse_proxy navio:8000
+
+	# Backend: chat + config endpoints + health check.
+	@api path /api/* /health
+	reverse_proxy @api navio:8000
+
+	# Frontend: the React SPA and /navio-widget.js (serves index.html for routes).
+	reverse_proxy frontend:8080
 }

@@ -25,7 +25,7 @@ export default function Hub() {
           <div className="flex min-h-[260px] flex-col items-center justify-center rounded-3xl border border-dashed border-black/[0.12] p-6 text-center">
             <span className="font-display text-lg font-semibold text-zinc-400">more soon</span>
             <p className="mt-1 max-w-[14rem] text-sm text-zinc-400">
-              New SportNavi bots for booking, voice and partners are in the works.
+              New Sportnavi bots for voice and partner onboarding are in the works.
             </p>
           </div>
         </div>

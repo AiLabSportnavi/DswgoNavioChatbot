@@ -1,4 +1,4 @@
-// Widget design variants — built only from the official SportNavi palette
+// Widget design variants — built only from the official Sportnavi palette
 // (green #95c11e, orange #ec6607, black, white) plus neutral grays.
 
 export type WidgetVariant = 'classic' | 'dark' | 'minimal' | 'gradient'
@@ -66,7 +66,7 @@ export const WIDGET_THEMES: Record<WidgetVariant, WidgetTheme> = {
 }
 
 export const WIDGET_VARIANTS: { id: WidgetVariant; label: string; desc: string }[] = [
-  { id: 'classic', label: 'Classic', desc: 'SportNavi green' },
+  { id: 'classic', label: 'Classic', desc: 'Sportnavi green' },
   { id: 'dark', label: 'Dark', desc: 'Black + green' },
   { id: 'minimal', label: 'Minimal', desc: 'White + green' },
   { id: 'gradient', label: 'Gradient', desc: 'Green → orange' },

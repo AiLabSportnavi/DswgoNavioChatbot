@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
+import { SignedIn, SignedOut, SignInButton, SignUpButton, UserButton } from '@clerk/clerk-react'
 import PillButton from './PillButton'
 import { Clover } from './icons'
 import { navigate } from '../lib/router'
@@ -8,9 +9,6 @@ type NavLink = { label: string; to: string }
 
 const NAV_LINKS: NavLink[] = [
   { label: 'chatbots', to: '/chatbots' },
-  { label: 'how it works', to: '/' },
-  { label: 'docs', to: '/' },
-  { label: 'pricing', to: '/' },
 ]
 
 export default function Navbar() {
@@ -31,7 +29,7 @@ export default function Navbar() {
           className="col-span-6 flex items-center gap-2 md:col-span-3"
         >
           <Clover className="h-5 w-5 text-ink" />
-          <span className="font-display text-xl tracking-tight text-ink">SportNavi</span>
+          <span className="font-display text-xl tracking-tight text-ink">Sportnavi</span>
         </button>
 
         {/* Center nav — desktop */}
@@ -50,16 +48,23 @@ export default function Navbar() {
 
         {/* Actions */}
         <div className="col-span-6 flex items-center justify-end gap-3 md:col-span-3 md:gap-5">
-          <button
-            type="button"
-            onClick={() => go('/')}
-            className="hidden text-sm lowercase text-zinc-600 transition-colors hover:text-ink sm:inline"
-          >
-            sign in
-          </button>
-          <PillButton onClick={() => go('/chatbots')} className="hidden sm:inline-flex">
-            get started
-          </PillButton>
+          {/* Signed-out: real Clerk sign-in / sign-up modals. Signed-in: account menu. */}
+          <SignedOut>
+            <SignInButton mode="modal">
+              <button
+                type="button"
+                className="hidden text-sm lowercase text-zinc-600 transition-colors hover:text-ink sm:inline"
+              >
+                sign in
+              </button>
+            </SignInButton>
+            <SignUpButton mode="modal">
+              <PillButton className="hidden sm:inline-flex">sign up</PillButton>
+            </SignUpButton>
+          </SignedOut>
+          <SignedIn>
+            <UserButton afterSignOutUrl="/" />
+          </SignedIn>
 
           {/* Hamburger — mobile */}
           <button
@@ -108,16 +113,25 @@ export default function Navbar() {
                   {link.label}
                 </button>
               ))}
-              <button
-                type="button"
-                onClick={() => go('/')}
-                className="text-left text-base lowercase text-zinc-700 transition-colors hover:text-ink"
-              >
-                sign in
-              </button>
-              <PillButton onClick={() => go('/chatbots')} className="mt-2 self-start">
-                get started
-              </PillButton>
+              <SignedOut>
+                <SignInButton mode="modal">
+                  <button
+                    type="button"
+                    className="text-left text-base lowercase text-zinc-700 transition-colors hover:text-ink"
+                  >
+                    sign in
+                  </button>
+                </SignInButton>
+                <SignUpButton mode="modal">
+                  <PillButton className="mt-2 self-start">sign up</PillButton>
+                </SignUpButton>
+              </SignedOut>
+              <SignedIn>
+                <div className="mt-1 flex items-center gap-3">
+                  <UserButton afterSignOutUrl="/" />
+                  <span className="text-sm lowercase text-zinc-600">account</span>
+                </div>
+              </SignedIn>
             </nav>
           </motion.div>
         )}

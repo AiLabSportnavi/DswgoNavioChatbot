@@ -1,11 +1,11 @@
 Datenschutzerklaerung
-SportNavi – Deine Sport- und Wellnessflatrate
+Sportnavi – Deine Sport- und Wellnessflatrate
 Stand: 18. Mai 2026
 
 Gem. Art. 13 DSGVO informieren wir dich ueber die Verarbeitung deiner personenbezogenen Daten.
 
 1. Kontaktdaten des Verantwortlichen
-SportNavi.de GmbH
+Sportnavi.de GmbH
 Schmiedestrang 22, 33415 Verl
 
 Telefon: +49 (0) 5246 / 9342000
@@ -49,7 +49,7 @@ d) Newsletter
 E-Mail-Adresse (nur mit Einwilligung)
 e) Gewinnspiele
 Anrede, Name, Mitgliedsnummer, E-Mail
-f) SportNavi-App (zusaetzlich)
+f) Sportnavi-App (zusaetzlich)
 Check-ins bei Partnern
 Standort (nur nach Einwilligung)
 Nutzungsdaten (zur Weiterentwicklung)
@@ -81,7 +81,7 @@ Datenuebertragbarkeit (maschinenlesbares Format)
 Widerruf deiner Einwilligung (mit Wirkung fuer die Zukunft)
 Widerspruch gegen Verarbeitung nach Art. 6 Abs. 1 lit. e/f DSGVO
 Kontakt fuer Betroffenenrechte:
-SportNavi.de GmbH – Datenschutz
+Sportnavi.de GmbH – Datenschutz
 E-Mail: info@sportnavi.de (Betreff: „Datenschutz“)
 
 Aufsichtsbehoerde:
@@ -128,4 +128,4 @@ Wir behalten uns vor, diese Erklaerung bei rechtlichen oder technischen Aenderun
 13. Schlussbestimmungen
 Sollten einzelne Bestimmungen unwirksam sein, bleibt die Wirksamkeit der uebrigen Bestimmungen unberuehrt.
 
-SportNavi.de GmbH – Deine Sport- und Wellnessflatrate. Firmenfitness aus NRW, seit 2006.
+Sportnavi.de GmbH – Deine Sport- und Wellnessflatrate. Firmenfitness aus NRW, seit 2006.

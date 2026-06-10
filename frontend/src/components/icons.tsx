@@ -18,7 +18,7 @@ function Svg({ children, ...props }: SVGProps<SVGSVGElement>) {
   )
 }
 
-/** Geometric four-petal clover — the SportNavi brand mark (filled). */
+/** Geometric four-petal clover — the Sportnavi brand mark (filled). */
 export function Clover({ className = '' }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" className={className} fill="currentColor" aria-hidden="true">

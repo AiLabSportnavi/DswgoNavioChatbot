@@ -5,105 +5,264 @@
 ### Project structure
 
 ```
-backend/                 the FastAPI app (see backend/README.md)
+backend/                 FastAPI app — the API, never shipped to the browser
   app.py                 endpoints, CORS, rate limiting, Turnstile/session hooks
+  clerk_auth.py          verifies Clerk login JWTs + admin email-domain allowlist
+  supabase_client.py     config storage + consent-gated conversation logging
   SYSTEM_PROMPT.md       full Navio prompt with the knowledge base baked in
-  chatbot.py             terminal chat loop for local testing
+  schema.sql             Supabase tables (run once in the SQL editor)
   requirements.txt       Python dependencies
   Dockerfile             builds the backend image
-docker-compose.yml       deployment stack: Caddy + backend + Redis
-Caddyfile                reverse proxy + automatic HTTPS
-knowledge_base/          source docs (reference for the baked prompt)
-.env                     credentials + settings (git-ignored)
+  .env                   backend secrets (git-ignored) — used by `uvicorn` directly
+frontend/                React + Vite SPA + the embeddable chat widget
+  src/                   app code (components, pages, lib/api.ts)
+  Dockerfile             builds the static site into an nginx image
+  nginx.conf             serves the SPA + proxies /api to the backend
+  .env                   frontend env (git-ignored) — the Clerk publishable key
+docker-compose.yml       full-stack server deploy: Caddy + frontend + backend + Redis
+Caddyfile                reverse proxy: /api → backend, everything else → frontend
+.env                     root env (git-ignored) — read by docker-compose
+.env.example             template for the root/backend env (copy → .env)
 ```
 
-The backend has its own docs: **[backend/README.md](backend/README.md)**.
+Two deployment models live in this repo:
+- **Google Cloud Run** (current production) — backend and frontend as two separate services. See **[DEPLOY.md](DEPLOY.md)**.
+- **Docker Compose** — the whole stack on one machine, one command. See [below](#option-b--with-docker-whole-stack-one-command).
 
-## Setup
+## What you need
+
+**Tools**
+| Tool | Version | For |
+|---|---|---|
+| [Node.js](https://nodejs.org) | 20+ | building/running the frontend |
+| [Python](https://python.org) | 3.11+ | running the backend |
+| [Docker Desktop](https://www.docker.com/products/docker-desktop/) | latest | **only** for the Docker run mode (Option B) |
+
+**Accounts / keys** (the app talks to three external services)
+| Service | What you get | Where it goes |
+|---|---|---|
+| **Azure OpenAI** | API key + endpoint + deployment name | backend env (secret) |
+| **Supabase** | project URL + service-role key | backend env (secret) |
+| **Clerk** (login) | publishable key (`pk_…`) + secret key (`sk_…`) | publishable → frontend; secret → backend |
+
+> The app **boots without Supabase or Clerk** (config falls back to disk; admin auth falls back to a token). Only Azure is strictly required to get a chat reply.
+
+---
+
+## 1. Environment setup (do this once)
+
+Secrets live in **git-ignored `.env` files** — never committed. There are three, and which you fill depends on how you run (see the table). Copy each from its `.example` template and fill in the values.
+
+| File | Read by | Needed for |
+|---|---|---|
+| `frontend/.env` | the frontend (Vite) | **always** |
+| `backend/.env` | the backend, when run with `uvicorn` | Option A (no Docker) |
+| `.env` (root) | the backend, via Docker Compose | Option B (Docker) |
+
+> `.env` (root) and `backend/.env` hold the **same backend values** — you only fill the one matching your run mode.
 
 ```powershell
-pip install -r backend/requirements.txt
+# Frontend (always)
+Copy-Item frontend\.env.example frontend\.env
+
+# Backend — pick ONE depending on how you run:
+Copy-Item .env.example backend\.env    # Option A: local dev with uvicorn
+Copy-Item .env.example .env            # Option B: Docker Compose
 ```
 
-Credentials are read from [.env](.env):
+Then open each `.env` and fill in:
 
-```
-AZURE_AI_CHATBOT_API_KEY=...
+```ini
+# backend/.env  (or root .env)  — secrets
+AZURE_AI_CHATBOT_API_KEY=...                 # from Azure portal
 AZURE_AI_CHATBOT_OPENAI_ENDPOINT=https://...openai.azure.com/openai/v1
 AZURE_AI_CHATBOT_DEPLOYMENT_NAME=gpt-4.1
+SUPABASE_URL=https://xxxx.supabase.co        # optional
+SUPABASE_SERVICE_ROLE_KEY=...                # optional, secret
+CLERK_ISSUER=https://your-app.clerk.accounts.dev
+CLERK_SECRET_KEY=sk_test_...                 # secret — admin login
+ADMIN_EMAIL_DOMAINS=sportnavi.de             # who may edit the system prompt
+
+# frontend/.env  — browser-safe only
+VITE_CLERK_PUBLISHABLE_KEY=pk_test_...        # the login UI key
 ```
 
-Optional API tuning (all have safe defaults):
+All other settings (rate limits, input caps, Turnstile, Redis) have safe defaults — see the comments in [.env.example](.env.example). Authentication is explained in detail under [Admin login](#admin-login-clerk).
 
-```
-ALLOWED_ORIGINS=https://sportnavi.de,https://www.sportnavi.de
-RATE_LIMIT_PER_MIN=15
-RATE_LIMIT_PER_DAY=300
-MAX_MESSAGE_CHARS=2000
-MAX_HISTORY_TURNS=10
-MAX_TOKENS=800
-```
+---
 
-### Go-live hooks (off by default — activate by setting env vars)
+## 2. Running the app — two ways
 
-```
-# Cloudflare Turnstile anti-abuse. Empty = OFF (dev). Set the secret = ON.
-TURNSTILE_SECRET=          # from Cloudflare dashboard (free)
-SESSION_SECRET=            # any long random string (signs session tokens)
-SESSION_TTL_MIN=30
+### Option A — without Docker (local development)
 
-# Rate-limit storage. Empty = in-memory (single container).
-# Set a Redis URL only when running multiple workers/containers.
-REDIS_URL=                 # e.g. redis://localhost:6379
-```
-
-- **Turnstile OFF** (default): `/api/chat` works directly — zero friction for development.
-- **Turnstile ON** (secret set): clients must first call `POST /api/session` with a
-  Turnstile token to get a `session_token`, then send it as the `X-Navio-Session`
-  header on `/api/chat`. No code change — just set the env var.
-- **Redis**: unset = in-memory limits (per process); set = shared limits across all
-  processes. Flip it only when you scale beyond one worker.
-
-## Run the API
+Best for coding: hot-reload on both sides. **Two terminals.**
 
 ```powershell
-uvicorn app:app --app-dir backend --reload     # http://127.0.0.1:8000
+# Terminal 1 — backend  (reads backend/.env)
+cd backend
+pip install -r requirements.txt
+uvicorn app:app --reload                 # → http://127.0.0.1:8000
+
+# Terminal 2 — frontend (reads frontend/.env)
+cd frontend
+npm install
+npm run dev                              # → http://localhost:5173
 ```
 
-Or with Docker (secrets passed at runtime — never baked into the image):
+Open **http://localhost:5173**. The frontend calls `/api/...`, and Vite proxies that to the backend on port 8000 (see [vite.config.ts](frontend/vite.config.ts)), so the browser stays same-origin — no CORS.
+
+> If you also have the Docker stack running, stop it first (`docker compose down`) — it would otherwise occupy port 8000.
+
+### Option B — with Docker (whole stack, one command)
+
+Best for running the app like production on one machine — no Node/Python needed, just Docker. Caddy serves everything on one port.
 
 ```powershell
-docker build -t navio backend
-docker run -p 8000:8000 --env-file .env navio
+docker compose up -d --build             # build + start everything
+docker compose logs -f                   # watch the logs
+docker compose down                      # stop everything
 ```
 
-### Deploy on a dedicated server (docker-compose)
+Open **http://localhost**. One container set, behind Caddy:
 
-A self-contained stack — **Caddy (auto-HTTPS) + Navio (multiple workers) + Redis** —
-lives in [docker-compose.yml](docker-compose.yml) and [Caddyfile](Caddyfile). Caddy is
-the only public entry; Redis is internal-only (shared rate limits across workers).
+```
+http://localhost  ─▶ Caddy ─┬─ /api/*, /health ─▶ backend (FastAPI) ─▶ Redis
+                            └─ everything else ─▶ frontend (nginx: SPA + widget)
+```
 
-1. Point your domain's DNS A-record at the server, then set it in `.env`:
-   ```
-   NAVIO_DOMAIN=navio.sportnavi.de    # or ":80" for local/plain-HTTP testing
-   WORKERS=2                          # ≈ 2 × CPU cores
-   ```
-2. Bring it up (Caddy fetches a free HTTPS certificate automatically):
-   ```bash
-   docker compose up -d --build
-   ```
+What compose handles for you:
+- **Builds both images** — the frontend (static site → nginx) and the backend.
+- **Bakes the Clerk key into the frontend** at build time from the committed [frontend/.env.production](frontend/.env.production) (the publishable key is public; Vite inlines it — same path as the Cloud Run build).
+- **Redis** is wired automatically for shared rate limits — you don't set `REDIS_URL`.
 
-`REDIS_URL` is set automatically by compose to the bundled Redis — you don't touch it.
-Scale by raising `WORKERS` (and the server size); the shared Redis keeps rate limits
-correct across all workers. To go fully public, set `TURNSTILE_SECRET` (see below).
+For a public server, point your domain at the host and set `NAVIO_DOMAIN` in the root `.env` (Caddy then auto-issues HTTPS):
 
-### Endpoints
+```ini
+NAVIO_DOMAIN=navio.sportnavi.de     # ":80" = local/plain-HTTP testing
+WORKERS=2                           # ≈ 2 × CPU cores
+```
+
+### Which do I use?
+
+| You want to… | Use |
+|---|---|
+| Edit code with hot-reload | **Option A** (no Docker) |
+| Run the whole app like production on one box | **Option B** (Docker) |
+| Deploy to the cloud (current production) | Cloud Run — see [DEPLOY.md](DEPLOY.md) |
+
+---
+
+## 3. Deploy on your own server (step by step)
+
+The friendly, start-to-finish version of Option B — host the **whole app** (website
++ chat + login) on one machine, e.g. a VPS from Hetzner, DigitalOcean, or AWS EC2.
+Backend and frontend run **together** here; you don't host them separately.
+
+### First — collect these 7 values
+
+Everything you fill in comes from three accounts. Get them once and keep them in a
+safe note:
+
+| From | Value | Secret? |
+|---|---|---|
+| **Azure OpenAI** | API key | 🔒 secret |
+| | endpoint URL | public |
+| | deployment name (e.g. `gpt-4.1`) | public |
+| **Supabase** | project URL | public |
+| | service-role key | 🔒 secret |
+| **Clerk** | publishable key (`pk_…`) | public |
+| | secret key (`sk_…`) | 🔒 secret |
+
+### Step 1 — install Docker on the server
+
+[Docker Desktop](https://www.docker.com/products/docker-desktop/) (Windows/Mac) or
+`docker` + the compose plugin (Linux). Nothing else — no Node, no Python.
+
+### Step 2 — fill in two files
+
+**📄 `.env`** (project root) — copy the template, then fill it in:
+
+```powershell
+Copy-Item .env.example .env
+```
+```ini
+AZURE_AI_CHATBOT_API_KEY=<your Azure key>
+AZURE_AI_CHATBOT_OPENAI_ENDPOINT=https://your-resource.openai.azure.com/openai/v1
+AZURE_AI_CHATBOT_DEPLOYMENT_NAME=gpt-4.1
+SUPABASE_URL=https://xxxx.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=<your Supabase service-role key>
+CLERK_ISSUER=https://your-app.clerk.accounts.dev
+CLERK_SECRET_KEY=<your Clerk sk_ key>
+ADMIN_EMAIL_DOMAINS=sportnavi.de            # who may edit the system prompt
+NAVIO_DOMAIN=navio.yourdomain.com           # or ":80" to test without a domain
+```
+
+**📄 `frontend/.env.production`** — the only value the website's browser needs:
+
+```ini
+VITE_CLERK_PUBLISHABLE_KEY=<your Clerk pk_ key>
+```
+
+### Step 3 — create the Supabase tables (one time)
+
+Open your Supabase project → **SQL editor** → paste and run the contents of
+[backend/schema.sql](backend/schema.sql). (Skip if you reuse an existing Supabase
+that already has the tables.)
+
+### Step 4 — start everything
+
+```bash
+docker compose up -d --build      # build + start
+docker compose logs -f            # watch it
+docker compose down               # stop
+```
+
+### Step 5 — point your domain at the server
+
+Add a DNS **`A` record** for `navio.yourdomain.com` pointing to the server's IP.
+Caddy automatically fetches a free HTTPS certificate for the `NAVIO_DOMAIN` you set.
+
+✅ **Done.** Open `https://navio.yourdomain.com` — website, chat, login, and the
+admin editor all run from that one address.
+
+> Just testing with no domain? Set `NAVIO_DOMAIN=:80` and open `http://localhost`.
+
+### Hosting backend and frontend separately instead
+
+If you'd rather host each piece as its own service (cloud platforms like Cloud Run),
+the order matters: **deploy the backend first**, copy its URL, then point the
+frontend at that URL (`frontend/nginx.conf`) before deploying it, and finally add
+the frontend's address to `ALLOWED_ORIGINS`. The full copy-paste runbook is in
+**[DEPLOY.md](DEPLOY.md)**.
+
+### The one rule to remember
+
+- **Secret keys** (Azure key, Supabase service-role, Clerk `sk_…`) → only ever on
+  the **backend / server**. Never in the frontend.
+- **Public values** (Clerk `pk_…`, the backend URL) → fine in the **frontend** —
+  they're meant to be seen.
+
+---
+
+## Admin login (Clerk)
+
+Editing Navio's system prompt is restricted. The flow:
+
+1. A visitor clicks **sign in / sign up** in the navbar → Clerk's login modal.
+2. The browser sends the signed-in user's Clerk token to the backend on save.
+3. The backend (`clerk_auth.py`) verifies the token and checks the user's **verified email domain** against `ADMIN_EMAIL_DOMAINS`. Match → allowed; otherwise `403`.
+
+So only people with an email on an allow-listed domain (e.g. `@sportnavi.de`) can change the prompt. Change `ADMIN_EMAIL_DOMAINS` (comma-separated) to adjust. Leave `CLERK_ISSUER` empty to disable Clerk entirely and fall back to a shared `ADMIN_TOKEN` (dev only).
+
+## API endpoints
 
 | Endpoint | Method | Purpose |
 |---|---|---|
 | `/health` | GET | Liveness check → `{"status":"ok","model":"gpt-4.1","turnstile":false}` |
-| `/api/session` | POST | Only needed when Turnstile is ON. Body: `{"turnstile_token":"..."}` → `{"session_token":"...","expires_in":1800}` |
 | `/api/chat` | POST | Chat. Body: `{"message": "...", "history": [{"role":"user","content":"..."}]}` → `{"reply": "..."}`. When Turnstile is ON, also send header `X-Navio-Session: <session_token>`. |
+| `/api/session` | POST | Only needed when Turnstile is ON. Body: `{"turnstile_token":"..."}` → `{"session_token":"...","expires_in":1800}` |
+| `/api/config` | GET | Returns the current system prompt + whether admin auth is required. |
+| `/api/config/system-prompt` | POST | Update the system prompt. **Requires admin** — `Authorization: Bearer <Clerk JWT>` (see [Admin login](#admin-login-clerk)). |
 
 ## Security & API Protection
 

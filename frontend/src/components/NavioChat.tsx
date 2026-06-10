@@ -2,13 +2,19 @@ import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { Info, Refresh, Close, Lock, Send, Check, ArrowRight } from './icons'
 import { sendChat, MAX_MESSAGE_CHARS, type ChatTurn } from '../lib/api'
+import Markdown from './Markdown'
 import type { Chatbot } from '../data/bots'
 
-type Msg = { id: number; role: 'bot' | 'user' | 'error'; text: string; intro?: boolean }
+type Msg = {
+  id: number
+  role: 'bot' | 'user' | 'error'
+  text: string
+  intro?: boolean
+}
 
 const ADVANTAGES = [
   'Answers 24/7 in German & English',
-  'Grounded only in the official SportNavi knowledge base',
+  'Grounded only in the official Sportnavi knowledge base',
   'Helps members, companies & partners',
   'Powered by Azure gpt-4.1 — your key stays server-side',
 ]
@@ -70,14 +76,15 @@ export default function NavioChat({
     setInput('')
     setStarted(true)
 
+    // Only real bot/user text goes into history — exclude intro and errors.
     const history: ChatTurn[] = messages
-      .filter((m) => !m.intro && m.role !== 'error')
+      .filter((m) => !m.intro && (m.role === 'bot' || m.role === 'user') && m.text.trim() !== '')
       .map((m) => ({ role: m.role === 'bot' ? 'assistant' : 'user', content: m.text }))
 
     setMessages((prev) => [...prev, { id: idRef.current++, role: 'user', text }])
     setLoading(true)
     try {
-      const reply = await sendChat(text, history)
+      const { reply } = await sendChat(text, history)
       setMessages((prev) => [...prev, { id: idRef.current++, role: 'bot', text: reply }])
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Something went wrong.'
@@ -91,14 +98,14 @@ export default function NavioChat({
     <div
       className={`flex flex-col overflow-hidden rounded-3xl border border-black/[0.06] bg-white ${className}`}
     >
-      {/* header — SportNavi green */}
+      {/* header — Sportnavi green */}
       <div className="flex items-center gap-3 bg-brand-green px-4 py-3 text-white">
         <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-brand-green">
           <bot.icon className="h-5 w-5" />
         </span>
         <div className="min-w-0 flex-1">
           <div className="truncate font-display text-sm font-semibold leading-tight">
-            {bot.name} — SportNavi Guide
+            {bot.name} — Sportnavi Guide
           </div>
           <div className="flex items-center gap-1.5 text-xs text-white/85">
             <span className="h-1.5 w-1.5 rounded-full bg-white" />
@@ -219,10 +226,14 @@ export default function NavioChat({
                     ? 'ml-auto max-w-[80%] rounded-2xl rounded-tr-sm bg-ink px-3.5 py-2.5 text-sm whitespace-pre-wrap text-white'
                     : m.role === 'error'
                       ? 'max-w-[88%] rounded-2xl rounded-tl-sm border border-red-200 bg-red-50 px-3.5 py-2.5 text-sm text-red-700'
-                      : 'max-w-[85%] rounded-2xl rounded-tl-sm bg-bg-base px-3.5 py-2.5 text-sm whitespace-pre-wrap text-ink'
+                      : m.intro
+                        ? 'max-w-[85%] rounded-2xl rounded-tl-sm bg-bg-base px-3.5 py-2.5 text-sm whitespace-pre-wrap text-ink'
+                        : 'max-w-[85%] rounded-2xl rounded-tl-sm bg-bg-base px-3.5 py-2.5 text-ink'
                 }
               >
-                {m.text}
+                {/* AI replies render as markdown (bold, links, lists, tables). The
+                    intro greeting stays plain text so its bilingual line breaks survive. */}
+                {m.role === 'bot' && !m.intro ? <Markdown>{m.text}</Markdown> : m.text}
               </motion.div>
             ))}
           </AnimatePresence>
@@ -259,14 +270,15 @@ export default function NavioChat({
 
       {/* input */}
       {!showInfo && (
-        <form
-          onSubmit={(e) => {
-            e.preventDefault()
-            send(input)
-          }}
-          className="flex items-center gap-2 border-t border-black/[0.05] px-3 py-3"
-        >
-          <input
+        <div className="border-t border-black/[0.05]">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault()
+              send(input)
+            }}
+            className="flex items-center gap-2 px-3 py-3"
+          >
+            <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
             disabled={!consented}
@@ -282,7 +294,8 @@ export default function NavioChat({
           >
             <Send className="h-4 w-4" />
           </button>
-        </form>
+          </form>
+        </div>
       )}
 
       {/* always-visible Datenschutz / Privacy Policy link */}

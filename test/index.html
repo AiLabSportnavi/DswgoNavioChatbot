@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Navio Widget — Embed Test</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 0; padding: 4rem 2rem; line-height: 1.6; color: #1a1a1a; }
+    .box { max-width: 640px; margin: 0 auto; }
+    h1 { color: #95c11e; }
+    code { background: #f3f3f3; padding: 0.15rem 0.4rem; border-radius: 4px; font-size: 0.9em; }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <h1>Navio Widget — Embed Test</h1>
+    <p>This is a dummy host page. If the embed works, the Navio chat bubble
+       appears in the bottom-right corner. Click it, accept the
+       Datenschutz notice, and send a message.</p>
+    <p>Widget source: <code>navio-frontend-34ktkxptbq-ey.a.run.app/navio-widget.js</code></p>
+  </div>
+
+  <!-- Paste once, before </body>. The Datenschutz consent is built in. -->
+  <script
+    src="https://navio-frontend-34ktkxptbq-ey.a.run.app/navio-widget.js"
+    data-api="https://navio-frontend-34ktkxptbq-ey.a.run.app"
+    data-policy-url="https://www.sportnavi.de/datenschutz/"
+    async
+  ></script>
+</body>
+</html>

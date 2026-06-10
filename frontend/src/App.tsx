@@ -1,6 +1,5 @@
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
-import ChatWidget from './components/ChatWidget'
 import Landing from './pages/Landing'
 import Hub from './pages/Hub'
 import BotDetail from './pages/BotDetail'
@@ -23,7 +22,6 @@ function App() {
       <Navbar />
       <main>{route.name === 'hub' ? <Hub /> : <Landing />}</main>
       <Footer />
-      <ChatWidget />
     </div>
   )
 }
