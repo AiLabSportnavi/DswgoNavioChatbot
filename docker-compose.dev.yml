@@ -1,0 +1,70 @@
+# =============================================================================
+# Navio — LOCAL DEVELOPMENT with Docker.
+#
+# Runs the whole app on ANY laptop with just Docker installed — no Python, no
+# Node. Both sides hot-reload (edit a file → it updates live).
+#
+#   docker compose -f docker-compose.dev.yml up           # start  (Ctrl+C stops)
+#   docker compose -f docker-compose.dev.yml up --build    # rebuild after dep changes
+#   docker compose -f docker-compose.dev.yml down          # stop + clean up
+#
+# Then open  http://localhost:5173
+#
+# This is NOT for production — production runs on Cloud Run or Vercel (see docs/).
+# Before first run, fill in the two env files (copy from the .example templates):
+#   backend/.env        (Azure key, DATABASE_URL, Clerk secret, …)
+#   frontend/.env       (VITE_CLERK_PUBLISHABLE_KEY — the public login key)
+# See docs/local/README.md for the full walkthrough.
+# =============================================================================
+services:
+  # --- Backend: FastAPI with auto-reload -------------------------------------
+  backend:
+    build: ./backend                       # reuses backend/Dockerfile to get the Python deps
+    command: uvicorn app:app --host 0.0.0.0 --port 8000 --reload
+    working_dir: /app
+    volumes:
+      - ./backend:/app                     # your code, live → hot reload
+    env_file:
+      - ./backend/.env                     # your Azure key, DATABASE_URL, Clerk secret, …
+    environment:
+      # Let the local website (below) call this API from the browser.
+      - ALLOWED_ORIGINS=http://localhost:5173
+    ports:
+      - "8000:8000"                        # http://localhost:8000  (e.g. /health, /docs)
+
+  # --- Frontend: Vite dev server with hot reload -----------------------------
+  frontend:
+    image: node:20-alpine
+    working_dir: /app
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    volumes:
+      - ./frontend:/app                    # your code, live → hot reload
+      - /app/node_modules                  # keep the container's Linux node_modules
+    environment:
+      # The browser calls the backend directly at this URL (CORS-allowed above).
+      - VITE_NAVIO_API=http://localhost:8000
+    ports:
+      - "5173:5173"                        # http://localhost:5173  ← open this
+    depends_on:
+      - backend
+
+# -----------------------------------------------------------------------------
+# OPTIONAL: a throwaway local Postgres so you can test config/logging fully
+# offline. To use it, uncomment this block, then in backend/.env set:
+#   DATABASE_URL=postgresql://navio:navio_local_dev@postgres:5432/navio
+# (and add `postgres` to the backend service's depends_on).
+# -----------------------------------------------------------------------------
+#  postgres:
+#    image: postgres:16-alpine
+#    environment:
+#      - POSTGRES_USER=navio
+#      - POSTGRES_PASSWORD=navio_local_dev
+#      - POSTGRES_DB=navio
+#    volumes:
+#      - ./backend/sql/schema.sql:/docker-entrypoint-initdb.d/10-schema.sql:ro
+#      - navio-pgdata:/var/lib/postgresql/data
+#    ports:
+#      - "5432:5432"
+#
+#volumes:
+#  navio-pgdata:
