@@ -10,7 +10,7 @@ Endpoints:
 
 State: the server is stateless (it holds no session). Chat history is sent by the
 client on every request; editable config + a per-request conversation log live in
-Supabase (see supabase_client.py + schema.sql). That keeps the app horizontally
+a Postgres database (see db.py + sql/schema.sql). That keeps the app horizontally
 scalable — any instance can serve any request.
 
 Security (v1): CORS allowlist + per-IP rate limiting + strict input caps.
@@ -22,11 +22,14 @@ from __future__ import annotations
 import base64
 import hashlib
 import hmac
+import logging
 import os
 import re
 import time
 import warnings
 from pathlib import Path
+
+log = logging.getLogger("navio")
 
 # Hide an unrelated, harmless plugin warning from the global Python env.
 warnings.filterwarnings("ignore", message="ImportError while loading the .* plugin")
@@ -54,10 +57,11 @@ from starlette.responses import JSONResponse
 # ---------------------------------------------------------------------------
 load_dotenv()
 
-# Imported AFTER load_dotenv() so the modules read their env (SUPABASE_*, CLERK_*)
-# from .env at import time.
-import supabase_client as supa  # noqa: E402
+# Imported AFTER load_dotenv() so the modules read their env (DATABASE_URL, CLERK_*,
+# SALESFORCE_*) from .env at import time.
+import db  # noqa: E402
 import clerk_auth  # noqa: E402
+import salesforce as sf  # noqa: E402
 
 ALLOWED_ORIGINS = [
     o.strip()
@@ -89,16 +93,16 @@ SESSION_TTL_MIN = int(os.getenv("SESSION_TTL_MIN", "30"))
 REDIS_URL = os.getenv("REDIS_URL", "").strip()
 
 BASE_DIR = Path(__file__).parent
-SYSTEM_PROMPT_PATH = BASE_DIR / "SYSTEM_PROMPT.md"
+SYSTEM_PROMPT_PATH = BASE_DIR / "prompts" / "SYSTEM_PROMPT.md"
 
 ADMIN_TOKEN = os.getenv("ADMIN_TOKEN", "").strip()
 
-# How long an instance trusts its cached config before re-reading Supabase. Small
-# so admin edits propagate across instances within seconds (0 = read every time).
+# How long an instance trusts its cached config before re-reading the database.
+# Small so admin edits propagate across instances within seconds (0 = read every time).
 CONFIG_TTL_SEC = int(os.getenv("CONFIG_TTL_SEC", "30"))
 
 # Editable config. Seeded from the on-disk files (the repo is the source of the
-# initial prompt), then backed by Supabase: reads refresh from there on a TTL,
+# initial prompt), then backed by the database: reads refresh from there on a TTL,
 # admin saves write there. The disk files are only a seed + offline fallback.
 _config = {
     "system_prompt": SYSTEM_PROMPT_PATH.read_text(encoding="utf-8"),
@@ -107,7 +111,7 @@ _config_loaded_at = 0.0
 
 
 def _apply_config_row(row: dict | None) -> None:
-    """Copy a Supabase bot_config row into the in-memory cache (ignoring blanks)."""
+    """Copy a bot_config row into the in-memory cache (ignoring blanks)."""
     if not row:
         return
     if row.get("system_prompt"):
@@ -115,15 +119,15 @@ def _apply_config_row(row: dict | None) -> None:
 
 
 def refresh_config(force: bool = False) -> None:
-    """Re-read config from Supabase if the cache is older than CONFIG_TTL_SEC.
-    No-op when Supabase is not configured (disk seed stays in effect)."""
+    """Re-read config from the database if the cache is older than CONFIG_TTL_SEC.
+    No-op when no database is configured (disk seed stays in effect)."""
     global _config_loaded_at
-    if not supa.supabase_enabled():
+    if not db.db_enabled():
         return
     now = time.time()
     if not force and (now - _config_loaded_at) < CONFIG_TTL_SEC:
         return
-    _apply_config_row(supa.fetch_config())
+    _apply_config_row(db.fetch_config())
     _config_loaded_at = now
 
 
@@ -276,6 +280,23 @@ class ConfigUpdate(BaseModel):
     content: str = Field(min_length=1, max_length=400_000)
 
 
+class ContactRequest(BaseModel):
+    """Navio Plus contact form → Salesforce CaseHandler flow. Field caps keep the
+    payload sane; values are mapped to the Salesforce flow inputs in /api/contact."""
+    membership: str = Field(min_length=1, max_length=40)
+    grund: str = Field(min_length=1, max_length=120)
+    thema: str = Field(min_length=1, max_length=120)
+    kurzbeschreibung: str = Field(min_length=1, max_length=300)
+    betreff: str = Field(min_length=1, max_length=200)
+    name: str = Field(min_length=1, max_length=120)
+    email: str = Field(min_length=3, max_length=200)
+    telefon: str | None = Field(default=None, max_length=40)
+    kundennummer: str | None = Field(default=None, max_length=60)
+    nachricht: str = Field(min_length=1, max_length=MAX_MESSAGE_CHARS)
+
+
+
+
 # ---------------------------------------------------------------------------
 # App
 # ---------------------------------------------------------------------------
@@ -303,14 +324,14 @@ async def rate_limit_handler(request: Request, exc: RateLimitExceeded) -> JSONRe
 
 @app.on_event("startup")
 def _startup() -> None:
-    # Load editable config from Supabase. If the table has no row yet, seed it from
-    # the on-disk prompt so the very first deploy works without a manual SQL insert.
+    # Load editable config from the database. If the table has no row yet, seed it
+    # from the on-disk prompt so the first deploy works without a manual SQL insert.
     global _config_loaded_at
-    if not supa.supabase_enabled():
+    if not db.db_enabled():
         return
-    row = supa.fetch_config()
+    row = db.fetch_config()
     if row is None:
-        supa.seed_config(_config["system_prompt"])
+        db.seed_config(_config["system_prompt"])
     else:
         _apply_config_row(row)
     _config_loaded_at = time.time()
@@ -322,7 +343,8 @@ def health() -> dict:
         "status": "ok",
         "model": _model,
         "turnstile": TURNSTILE_ENABLED,
-        "supabase": supa.supabase_enabled(),
+        "database": db.db_enabled(),
+        "salesforce": sf.salesforce_enabled(),
     }
 
 
@@ -364,7 +386,7 @@ def _log_row(
         "total_tokens": getattr(usage, "total_tokens", None),
         "model": _model,
         "finish_reason": finish_reason,
-        "ip_hash": supa.hash_ip(ip),
+        "ip_hash": db.hash_ip(ip),
     }
 
 
@@ -385,7 +407,7 @@ def chat(
             "Session invalid or expired. Please reload.",
         )
 
-    # Pick up any admin prompt edits (TTL-gated read from Supabase).
+    # Pick up any admin prompt edits (TTL-gated read from the database).
     refresh_config()
 
     # System prompt is injected server-side; client history can only be user/assistant.
@@ -417,11 +439,11 @@ def chat(
     latency_ms = int((time.perf_counter() - started) * 1000)
 
     # Log the turn for monitoring — fire-and-forget AFTER the response is sent, so
-    # Supabase latency never adds to the visitor's wait. Values are captured now
+    # database latency never adds to the visitor's wait. Values are captured now
     # (the Request is gone by the time the background task runs).
-    if supa.supabase_enabled():
+    if db.db_enabled():
         background.add_task(
-            supa.log_conversation,
+            db.log_conversation,
             _log_row(
                 ip=client_ip(request),
                 session_token=x_navio_session,
@@ -437,10 +459,70 @@ def chat(
 
 
 # ---------------------------------------------------------------------------
+# Contact form (Navio Plus) → Salesforce CaseHandler flow.
+# Runs server-side because the Salesforce client_id/secret are secrets. On a flow
+# failure we email the request to CONTACT_FALLBACK_EMAIL so nothing is ever lost.
+# ---------------------------------------------------------------------------
+def _contact_email_body(inputs: dict, detail: str) -> str:
+    """Readable plaintext of a contact request, for the fallback email."""
+    lines = [f"{k}: {v}" for k, v in inputs.items()]
+    return (
+        "A Navio Plus contact request could not be delivered to Salesforce and is "
+        "forwarded here so it is not lost.\n\n"
+        + "\n".join(lines)
+        + f"\n\n---\nSalesforce error: {detail}"
+    )
+
+
+@app.post("/api/contact")
+@limiter.limit(f"{RATE_LIMIT_PER_MIN}/minute")
+@limiter.limit(f"{RATE_LIMIT_PER_DAY}/day")
+def contact(request: Request, body: ContactRequest) -> dict:
+    # Map the form fields to the Salesforce flow's input names (per the API doc).
+    # The form already sends exact Salesforce picklist values (cascading dropdowns),
+    # so values pass straight through — no translation needed.
+    inputs = {
+        "MembershipType": body.membership,
+        "CaseGrounds": body.grund,
+        "Topic": body.thema,
+        "ShortDescription": body.kurzbeschreibung,
+        "Subject": body.betreff,
+        "Name": body.name,
+        "Email": body.email,
+        "Phone": body.telefon or "",
+        "CustomerNumber": body.kundennummer or "",
+        "Description": body.nachricht,
+    }
+
+    # No credentials configured → simulate success so the form stays demoable.
+    if not sf.salesforce_enabled():
+        log.warning("CONTACT (Salesforce not configured — simulated): %s", inputs)
+        return {"status": "ok", "simulated": True}
+
+    ok, detail = sf.submit_case(inputs)
+    if ok:
+        return {"status": "ok"}
+
+    # Salesforce rejected/failed → make sure the request still reaches the team.
+    log.error("CONTACT Salesforce failed: %s", detail)
+    emailed = sf.send_fallback_email(
+        subject=f"[Navio Kontakt] {body.betreff} — {body.name}",
+        body=_contact_email_body(inputs, detail),
+    )
+    if emailed:
+        return {"status": "ok", "fallback": "email"}
+    raise HTTPException(
+        status_code=502,
+        detail="Senden fehlgeschlagen. Bitte später erneut versuchen. / "
+        "Could not send right now. Please try again later.",
+    )
+
+
+# ---------------------------------------------------------------------------
 # Admin config: read/write the system prompt. (The Datenschutz text is not stored
 # here — the widget links straight to the live sportnavi.de/datenschutz page.)
-# Persisted to Supabase (so edits survive restarts + reach every instance);
-# falls back to the on-disk file only when Supabase is not configured.
+# Persisted to the database (so edits survive restarts + reach every instance);
+# falls back to the on-disk file only when no database is configured.
 #
 # Auth: when Clerk is configured (CLERK_ISSUER set), writes require a valid Clerk
 # session JWT in `Authorization: Bearer <jwt>` whose verified email is on an
@@ -474,9 +556,9 @@ def set_system_prompt(
 ) -> dict:
     require_admin(authorization, x_admin_token)
     _config["system_prompt"] = body.content  # takes effect on the next /api/chat
-    if supa.supabase_enabled():
-        if not supa.update_config_field("system_prompt", body.content):
-            raise HTTPException(status_code=502, detail="Konnte nicht in Supabase speichern.")
+    if db.db_enabled():
+        if not db.update_config_field("system_prompt", body.content):
+            raise HTTPException(status_code=502, detail="Konnte nicht in der Datenbank speichern.")
     else:
         SYSTEM_PROMPT_PATH.write_text(body.content, encoding="utf-8")
     return {"status": "saved"}

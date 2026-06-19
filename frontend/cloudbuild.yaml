@@ -1,0 +1,24 @@
+# Builds the Navio frontend image in Google Cloud Build with the backend URL baked in
+# via a Docker --build-arg. This is how ../deploy.ps1 builds the frontend.
+#
+# Why not `gcloud run deploy --source`? That path doesn't reliably get
+# frontend/.env.production into the build context, so VITE_NAVIO_API goes missing and
+# the site calls a relative /api (→ 405). Passing the URL as a build-arg here forces it
+# in every time, independent of any file upload.
+#
+# Called as:
+#   gcloud builds submit ./frontend --config frontend/cloudbuild.yaml \
+#     --substitutions=_VITE_NAVIO_API=<backend-url>,_IMAGE=<artifact-registry-image>
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - --build-arg
+      - VITE_NAVIO_API=${_VITE_NAVIO_API}
+      - -t
+      - ${_IMAGE}
+      - .
+  - name: gcr.io/cloud-builders/docker
+    args: [push, '${_IMAGE}']
+images:
+  - ${_IMAGE}

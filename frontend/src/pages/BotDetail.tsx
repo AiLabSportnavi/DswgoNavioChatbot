@@ -8,7 +8,7 @@ import ConfigEditor from '../components/ConfigEditor'
 import RobotBrain from '../components/RobotBrain'
 import {
   ArrowLeft, ArrowRight, Github, Bot, Bolt, Lock, Clock, Users, Briefcase,
-  Compass, Globe, Code, Refresh, Check, Clover, Chat, Sparkles,
+  Compass, Globe, Code, Check, Clover, Chat, Sparkles,
 } from '../components/icons'
 import { navigate } from '../lib/router'
 import { getBot } from '../data/bots'
@@ -52,8 +52,8 @@ const REPO: [string, string][] = [
   ['backend/app.py', 'The FastAPI service — all endpoints, security, and the model call'],
   ['backend/SYSTEM_PROMPT.md', 'Navio’s identity, tone rules, and the full embedded knowledge base'],
   ['backend/requirements.txt', 'Python dependencies'],
-  ['backend/Dockerfile', 'Container build for the backend'],
-  ['docker-compose.yml', 'Full production stack: Caddy + Navio + Redis'],
+  ['backend/Dockerfile', 'Container build for the backend (Cloud Run / any host)'],
+  ['backend/vercel.json', 'Serverless deploy entry for Vercel (FastAPI)'],
   ['frontend/src/data/bots.ts', 'Navio’s profile (name, greeting, quick replies, API URL, privacy text)'],
   ['frontend/src/components/NavioChat.tsx', 'The chat window UI (consent gate, messages, input)'],
   ['frontend/src/components/ChatWidget.tsx', 'The floating launcher bubble + greeting card'],
@@ -125,10 +125,11 @@ cd frontend
 npm install
 npm run dev                       # Vite proxies /api -> 127.0.0.1:8000`
 
-const DOCKER = `# Set NAVIO_DOMAIN and the AZURE_AI_CHATBOT_* secrets in .env
-docker compose up -d --build      # start everything
-docker compose logs -f navio      # watch the app
-docker compose down               # stop`
+const PROD = `# Backend → Google Cloud Run (full runbook in DEPLOY.md)
+gcloud run deploy navio --source ./backend --region europe-west3 --port 8000
+
+# Frontend → Vercel (static SPA). Set VITE_NAVIO_API to the backend URL.
+vercel --prod   # or: gcloud run deploy navio-frontend --source ./frontend`
 
 /* ── tiny presentational helpers ──────────────────────────────────────── */
 function Code2({ children }: { children: ReactNode }) {
@@ -772,24 +773,24 @@ export default function BotDetail({ id }: { id: string }) {
           </div>
           <div className="grid items-start gap-6 md:grid-cols-2">
             <div>
-              <h3 className="mb-5 font-display text-xl font-semibold text-ink">Production (Docker Compose)</h3>
-              <Terminal name="terminal — docker compose" code={DOCKER} />
+              <h3 className="mb-5 font-display text-xl font-semibold text-ink">Production (managed hosting)</h3>
+              <Terminal name="terminal — deploy" code={PROD} />
             </div>
             <div>
-              <p className="mb-4 text-[15px] text-zinc-600">The compose stack is:</p>
+              <p className="mb-4 text-[15px] text-zinc-600">The backend and frontend deploy independently:</p>
               <div className="space-y-0">
-                <Node icon={Globe} t="internet → Caddy" d="auto-HTTPS, the only public entry point" />
+                <Node icon={Globe} t="internet → frontend" d="static SPA on Vercel or a container (CDN-served)" />
                 <Arrow />
-                <Node brand icon={Bolt} t="navio" d="FastAPI, multiple uvicorn workers (WEB_CONCURRENCY / WORKERS)" />
+                <Node brand icon={Bolt} t="backend" d="FastAPI on Cloud Run or Vercel functions" />
                 <Arrow />
-                <Node icon={Refresh} t="redis" d="shared rate-limit counters, internal-only, not persisted" />
+                <Node icon={Lock} t="Postgres" d="managed — Supabase or Azure — via one DATABASE_URL" />
               </div>
             </div>
           </div>
           <div className="grid gap-5 md:grid-cols-3">
-            <Card icon={Lock} title="Caddy">Terminates HTTPS automatically and is the single public entry point.</Card>
-            <Card icon={Bolt} title="Navio">Runs with multiple workers (<Code2>WEB_CONCURRENCY</Code2> / <Code2>WORKERS</Code2>).</Card>
-            <Card icon={Refresh} title="Redis">Holds shared rate-limit counters so limits hold across workers; internal-only and disposable.</Card>
+            <Card icon={Globe} title="Frontend">Static SPA — host on Vercel or any container. Calls the backend directly at <Code2>VITE_NAVIO_API</Code2> (CORS-allowed by the backend).</Card>
+            <Card icon={Bolt} title="Backend">Stateless FastAPI — Cloud Run, Vercel functions, or any container. Scales horizontally; set <Code2>REDIS_URL</Code2> once you run more than one instance.</Card>
+            <Card icon={Lock} title="Database">Managed Postgres — Supabase or Azure — selected by one <Code2>DATABASE_URL</Code2>. Optional: the app still runs without it.</Card>
           </div>
         </div>
       </section>

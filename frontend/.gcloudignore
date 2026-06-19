@@ -1,0 +1,20 @@
+# Controls what `gcloud run deploy --source ./frontend` uploads to Cloud Build.
+#
+# Why this file exists: without it, gcloud falls back to .gitignore, whose ".env.*"
+# rule DROPS .env.production from the upload — so the Vite build never sees
+# VITE_NAVIO_API and the site ends up calling a relative /api (→ 405 from nginx).
+# This .gcloudignore keeps .env.production while still excluding heavy/secret files.
+
+.git
+node_modules
+dist
+dist-ssr
+dist-widget
+*.log
+.vscode
+.idea
+
+# Exclude ONLY the dev/local env files — NOT .env.production (the build needs it).
+.env
+.env.local
+.env.*.local

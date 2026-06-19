@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Navio — Explained Simply</title>
+<style>
+  :root{
+    --navy:#0f1b2d; --slate:#1f3147; --ink:#0b1320; --muted:#5f6f80;
+    --line:#e6ebf1; --paper:#ffffff; --paper-2:#f6f9fc; --paper-3:#eef3f8;
+    --green:#95c11e; --green-d:#7da015; --green-soft:#eef6d8;
+    --orange:#ec6607; --orange-soft:#fdebdd;
+    --blue:#2a6df4; --blue-soft:#e7f0ff;
+    --shadow-sm:0 8px 24px -10px rgba(15,27,45,.32);
+    --shadow:0 20px 55px -20px rgba(15,27,45,.5);
+    --radius:18px;
+    --font:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;}
+  body{
+    font-family:var(--font);
+    background:radial-gradient(1100px 560px at 82% -10%, #1d2f49 0%, transparent 60%), var(--navy);
+    color:var(--ink);-webkit-font-smoothing:antialiased;overflow:hidden;
+  }
+  .deck{height:100vh;width:100vw;position:relative;}
+  .slide{
+    position:absolute;inset:0;display:none;flex-direction:column;
+    padding:60px 80px 70px;background:var(--paper);
+    opacity:0;transform:translateY(14px);transition:opacity .5s ease, transform .5s ease;overflow:hidden;
+  }
+  .slide.active{display:flex;opacity:1;transform:none;}
+  .slide::before{content:"";position:absolute;left:0;top:0;bottom:0;width:9px;background:linear-gradient(180deg,var(--green),var(--orange));}
+
+  .eyebrow{display:inline-flex;align-items:center;gap:9px;font-size:12.5px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--green-d);}
+  .eyebrow .dot{width:8px;height:8px;border-radius:50%;background:var(--orange);}
+  h1.t{font-size:42px;line-height:1.1;font-weight:800;color:var(--navy);margin:12px 0 8px;letter-spacing:-.02em;}
+  h1.t .a{color:var(--green-d);}
+  .sub{font-size:18px;color:var(--muted);font-weight:500;max-width:1000px;line-height:1.55;}
+  .body{flex:1;display:flex;flex-direction:column;justify-content:center;margin-top:26px;min-height:0;}
+
+  .footer{position:absolute;left:80px;right:80px;bottom:24px;display:flex;align-items:center;justify-content:space-between;
+    font-size:12px;color:var(--muted);font-weight:600;border-top:1px solid var(--line);padding-top:13px;}
+  .footer b{color:var(--navy);font-weight:800;}
+
+  .grid{display:grid;gap:20px;}
+  .g2{grid-template-columns:repeat(2,1fr);}
+  .g3{grid-template-columns:repeat(3,1fr);}
+  .card{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:26px;box-shadow:var(--shadow-sm);}
+  .card.t2{background:var(--paper-2);}
+  .card h3{font-size:19px;color:var(--navy);margin-bottom:10px;font-weight:800;display:flex;align-items:center;gap:12px;}
+  .card p{font-size:15px;color:var(--slate);line-height:1.6;}
+  .emoji{font-size:30px;line-height:1;flex:none;}
+  .big-emoji{font-size:46px;line-height:1;}
+
+  ul.plain{list-style:none;display:flex;flex-direction:column;gap:13px;margin-top:6px;}
+  ul.plain li{display:flex;gap:12px;font-size:16px;color:var(--slate);line-height:1.5;align-items:flex-start;}
+  ul.plain li .d{flex:none;width:24px;height:24px;border-radius:8px;background:var(--green-soft);color:var(--green-d);
+    display:grid;place-items:center;font-size:13px;font-weight:800;margin-top:1px;}
+  ul.plain li .d.o{background:var(--orange-soft);color:var(--orange);}
+  ul.plain li .d.b{background:var(--blue-soft);color:var(--blue);}
+
+  .tag{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:700;padding:7px 14px;border-radius:999px;
+    background:var(--green-soft);color:var(--green-d);}
+  .tag.o{background:var(--orange-soft);color:var(--orange);}
+  .tag.b{background:var(--blue-soft);color:var(--blue);}
+  .tag.n{background:var(--paper-3);color:var(--navy);}
+
+  .lead{font-size:17px;line-height:1.7;color:var(--slate);}
+  .lead b{color:var(--navy);}
+
+  /* title */
+  .title{background:radial-gradient(900px 520px at 85% 0%, #20355a 0%, transparent 60%),linear-gradient(160deg,var(--navy),#0b1626);color:#fff;justify-content:center;}
+  .title::before{background:linear-gradient(180deg,var(--green),var(--orange));}
+  .title .footer{border-color:rgba(255,255,255,.12);color:rgba(255,255,255,.55);}
+  .title .footer b{color:#fff;}
+  .brandmark{display:flex;align-items:center;gap:15px;margin-bottom:32px;}
+  .brandmark .logo{width:58px;height:58px;border-radius:15px;display:grid;place-items:center;background:linear-gradient(135deg,var(--green),var(--green-d));box-shadow:0 12px 32px -8px rgba(149,193,30,.6);}
+  .brandmark .wn{font-size:26px;font-weight:800;}
+  .brandmark .wn span{color:var(--green);}
+  .brandmark .tg{font-size:12.5px;color:rgba(255,255,255,.55);font-weight:600;letter-spacing:.12em;text-transform:uppercase;}
+  .title h1{font-size:62px;line-height:1.05;font-weight:800;letter-spacing:-.03em;max-width:1000px;}
+  .title h1 .hl{background:linear-gradient(90deg,var(--green),var(--orange));-webkit-background-clip:text;background-clip:text;color:transparent;}
+  .title .lead-w{font-size:20px;color:rgba(255,255,255,.72);margin-top:22px;max-width:760px;line-height:1.55;font-weight:500;}
+
+  /* hosting option card */
+  .opt{border-radius:var(--radius);border:2px solid var(--line);padding:28px 26px;position:relative;background:var(--paper);box-shadow:var(--shadow-sm);height:100%;display:flex;flex-direction:column;}
+  .opt .badge{position:absolute;top:-13px;left:26px;font-size:12px;font-weight:800;letter-spacing:.05em;padding:6px 14px;border-radius:999px;color:#fff;}
+  .opt .ic{font-size:42px;margin-bottom:14px;}
+  .opt h3{font-size:21px;font-weight:800;color:var(--navy);margin-bottom:4px;}
+  .opt .who{font-size:13px;font-weight:700;color:var(--muted);margin-bottom:14px;}
+  .opt p{font-size:14.5px;color:var(--slate);line-height:1.6;}
+  .opt.green{border-color:#cfe08a;} .opt.green .badge{background:var(--green-d);}
+  .opt.orange{border-color:#f6c9a4;} .opt.orange .badge{background:var(--orange);}
+  .opt.blue{border-color:#bcd2fb;} .opt.blue .badge{background:var(--blue);}
+  .opt ul{list-style:none;margin-top:14px;display:flex;flex-direction:column;gap:9px;}
+  .opt ul li{font-size:13.5px;color:var(--slate);display:flex;gap:9px;align-items:flex-start;line-height:1.45;}
+  .opt ul li::before{content:"✓";color:var(--green-d);font-weight:800;flex:none;}
+
+  /* comparison table */
+  table.cmp{width:100%;border-collapse:separate;border-spacing:0;font-size:14.5px;}
+  table.cmp th,table.cmp td{padding:15px 18px;text-align:left;border-bottom:1px solid var(--line);}
+  table.cmp thead th{font-size:12.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:700;background:var(--paper-2);}
+  table.cmp thead th:first-child{border-top-left-radius:12px;}
+  table.cmp thead th:last-child{border-top-right-radius:12px;}
+  table.cmp td:first-child{font-weight:700;color:var(--navy);}
+  table.cmp tbody tr:hover{background:var(--paper-2);}
+  table.cmp .yes{color:var(--green-d);font-weight:700;}
+  table.cmp .mid{color:var(--orange);font-weight:700;}
+
+  svg{display:block;}
+  .cap{font-size:13px;fill:var(--muted);font-weight:600;}
+
+  .controls{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:50;display:flex;align-items:center;gap:6px;
+    background:rgba(15,27,45,.85);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:6px 8px;box-shadow:var(--shadow);}
+  .controls button{appearance:none;border:none;background:transparent;color:#dbe6f3;width:34px;height:34px;border-radius:50%;cursor:pointer;font-size:16px;display:grid;place-items:center;transition:background .15s;}
+  .controls button:hover{background:rgba(255,255,255,.14);}
+  .controls .count{color:#fff;font-size:12.5px;font-weight:700;min-width:60px;text-align:center;}
+  .progress{position:fixed;top:0;left:0;height:4px;background:linear-gradient(90deg,var(--green),var(--orange));z-index:60;transition:width .4s ease;}
+  .hint{position:fixed;bottom:20px;right:22px;z-index:50;font-size:11px;color:rgba(255,255,255,.4);font-weight:600;}
+
+  @media print{body{overflow:visible;background:#fff;}.slide{display:flex !important;opacity:1 !important;transform:none !important;position:relative;page-break-after:always;height:100vh;width:100vw;}.controls,.progress,.hint{display:none !important;}}
+</style>
+</head>
+<body>
+<div class="progress" id="progress"></div>
+<div class="deck" id="deck">
+
+  <!-- 1 TITLE -->
+  <section class="slide title active">
+    <div class="brandmark">
+      <div class="logo"><svg width="32" height="32" viewBox="0 0 24 24" fill="none"><path d="M12 2L20 6V12C20 17 16.5 20.5 12 22C7.5 20.5 4 17 4 12V6L12 2Z" fill="#0f1b2d"/><path d="M9 12.5L11 14.5L15.5 9.5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div><div class="wn">Navio<span>.</span></div><div class="tg">SportNavi · The friendly AI guide</div></div>
+    </div>
+    <h1>Navio, <span class="hl">explained simply</span></h1>
+    <p class="lead-w">How the chatbot is put together, and the three easy ways it can be hosted — no technical background needed.</p>
+    <div style="display:flex;gap:12px;margin-top:34px;flex-wrap:wrap">
+      <div class="tag" style="background:rgba(255,255,255,.06);color:#fff;border:1px solid rgba(255,255,255,.14)">🎨 The design</div>
+      <div class="tag" style="background:rgba(255,255,255,.06);color:#fff;border:1px solid rgba(255,255,255,.14)">🖥️ Front &amp; back</div>
+      <div class="tag" style="background:rgba(255,255,255,.06);color:#fff;border:1px solid rgba(255,255,255,.14)">☁️ Cloud hosting</div>
+      <div class="tag" style="background:rgba(255,255,255,.06);color:#fff;border:1px solid rgba(255,255,255,.14)">🖧 Own server</div>
+      <div class="tag" style="background:rgba(255,255,255,.06);color:#fff;border:1px solid rgba(255,255,255,.14)">💻 Your computer</div>
+    </div>
+    <div class="footer"><span><b>NAVIO</b> · A plain-language overview</span><span>1 of 9</span></div>
+  </section>
+
+  <!-- 2 WHAT IS NAVIO -->
+  <section class="slide">
+    <span class="eyebrow"><span class="dot"></span> The big picture</span>
+    <h1 class="t">What is <span class="a">Navio?</span></h1>
+    <p class="sub">Navio is a friendly chat assistant that lives on the SportNavi website. Visitors type a question, and Navio answers — like a helpful guide who is always available.</p>
+    <div class="body">
+      <div class="grid g3">
+        <div class="card t2"><div class="big-emoji">💬</div><h3 style="margin-top:14px">Ask anything</h3><p>A visitor opens the little chat bubble on the website and types a question in their own words.</p></div>
+        <div class="card t2"><div class="big-emoji">🧠</div><h3 style="margin-top:14px">Navio thinks</h3><p>Behind the scenes, Navio sends the question to a powerful AI, gets an answer, and checks it stays on-topic.</p></div>
+        <div class="card t2"><div class="big-emoji">✅</div><h3 style="margin-top:14px">Helpful reply</h3><p>A clear, friendly answer appears in the chat — usually in about a second.</p></div>
+      </div>
+      <div class="card" style="margin-top:22px;display:flex;gap:18px;align-items:center;background:var(--green-soft);border-color:#cfe08a">
+        <span class="big-emoji">🛡️</span>
+        <p class="lead" style="font-size:16px">The whole thing is built to be <b>safe and trustworthy</b>: it only works on the official SportNavi website, it can't be flooded by bots, and no private keys are ever exposed to visitors.</p>
+      </div>
+    </div>
+    <div class="footer"><span><b>NAVIO</b> · The big picture</span><span>2 of 9</span></div>
+  </section>
+
+  <!-- 3 FRONTEND + BACKEND -->
+  <section class="slide">
+    <span class="eyebrow"><span class="dot"></span> How it's built</span>
+    <h1 class="t">Two parts: the <span class="a">face</span> and the <span class="a">brain</span></h1>
+    <p class="sub">Like a restaurant, Navio has a friendly front-of-house and a busy kitchen. You only ever see the front — the kitchen does the real work out of sight.</p>
+    <div class="body">
+      <svg viewBox="0 0 1000 150" width="100%" style="max-height:140px;margin-bottom:22px">
+        <defs><marker id="ar" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#95c11e"/></marker></defs>
+        <g font-family="Inter" text-anchor="middle">
+          <rect x="40" y="40" width="200" height="70" rx="14" fill="#eef6d8" stroke="#95c11e" stroke-width="2"/>
+          <text x="140" y="74" font-size="26">🖥️</text><text x="140" y="100" font-size="14" font-weight="700" fill="#0f1b2d">Frontend (the face)</text>
+          <line x1="242" y1="75" x2="380" y2="75" stroke="#95c11e" stroke-width="3" marker-end="url(#ar)"/>
+          <text x="311" y="66" class="cap">question</text>
+          <rect x="385" y="40" width="230" height="70" rx="14" fill="#0f1b2d"/>
+          <text x="500" y="74" font-size="26">🧠</text><text x="500" y="100" font-size="14" font-weight="700" fill="#fff">Backend (the brain)</text>
+          <line x1="760" y1="75" x2="622" y2="75" stroke="#95c11e" stroke-width="3" marker-end="url(#ar)"/>
+          <text x="691" y="66" class="cap">answer</text>
+          <rect x="765" y="40" width="195" height="70" rx="14" fill="#eef0ff" stroke="#2a6df4" stroke-width="2"/>
+          <text x="862" y="74" font-size="26">🤖</text><text x="862" y="100" font-size="14" font-weight="700" fill="#0f1b2d">The AI engine</text>
+        </g>
+      </svg>
+      <div class="grid g2">
+        <div class="card green" style="border:2px solid #cfe08a;border-radius:18px">
+          <h3><span class="emoji">🖥️</span> The Frontend — what people see</h3>
+          <p>The webpage and the little chat bubble. It's the part that looks nice, takes the visitor's question, and shows the answer.</p>
+          <ul class="plain" style="margin-top:14px">
+            <li><span class="d">›</span> The chat window and SportNavi design</li>
+            <li><span class="d">›</span> Runs in the visitor's web browser</li>
+            <li><span class="d">›</span> Holds no secrets — just the friendly interface</li>
+          </ul>
+        </div>
+        <div class="card" style="border:2px solid #1f3147;border-radius:18px;background:var(--navy)">
+          <h3 style="color:#fff"><span class="emoji">🧠</span> The Backend — the brain</h3>
+          <p style="color:#c6d4e6">The hidden engine. It checks the question is allowed, talks to the AI, and keeps everything secure and within limits.</p>
+          <ul class="plain" style="margin-top:14px">
+            <li><span class="d b">›</span><span style="color:#c6d4e6">Talks to the AI and applies the rules</span></li>
+            <li><span class="d b">›</span><span style="color:#c6d4e6">Keeps all the secret keys safely server-side</span></li>
+            <li><span class="d b">›</span><span style="color:#c6d4e6">Visitors never see or touch it directly</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="footer"><span><b>NAVIO</b> · How it's built</span><span>3 of 9</span></div>
+  </section>
+
+  <!-- 4 THREE WAYS TO HOST -->
+  <section class="slide">
+    <span class="eyebrow"><span class="dot"></span> Where Navio lives</span>
+    <h1 class="t">Three ways to <span class="a">host</span> Navio</h1>
+    <p class="sub">"Hosting" just means: where does the brain actually run? Think of it like deciding where to keep a shop — rent a managed space, run your own building, or set up a stall at home to practice.</p>
+    <div class="body">
+      <div class="grid g3" style="gap:26px;align-items:stretch">
+        <div class="opt green"><span class="badge">OPTION A</span><div class="ic">☁️</div><h3>Cloud hosting</h3><div class="who">The easy, hands-off choice</div><p>A big cloud provider runs Navio for you and keeps it online automatically — like renting a fully-managed, serviced office.</p></div>
+        <div class="opt orange"><span class="badge">OPTION B</span><div class="ic">🖧</div><h3>Your own server</h3><div class="who">Full control, one box</div><p>Everything Navio needs runs together on a single server you rent and control — like owning your own building.</p></div>
+        <div class="opt blue"><span class="badge">OPTION C</span><div class="ic">💻</div><h3>Local instance</h3><div class="who">For testing &amp; building</div><p>Navio runs on a developer's own computer, just for trying things out — like a practice kitchen, not open to the public.</p></div>
+      </div>
+      <p class="lead" style="text-align:center;margin-top:26px;font-size:16px;color:var(--muted)">All three run the <b>exact same Navio</b> — only the <b>location</b> and <b>who keeps it running</b> change.</p>
+    </div>
+    <div class="footer"><span><b>NAVIO</b> · Where Navio lives</span><span>4 of 9</span></div>
+  </section>
+
+  <!-- 5 CLOUD HOSTING -->
+  <section class="slide">
+    <span class="eyebrow"><span class="dot"></span> Option A</span>
+    <h1 class="t">Cloud hosting — <span class="a">hands-off &amp; reliable</span></h1>
+    <p class="sub">This is how Navio runs today. A trusted cloud provider hosts it in a European data centre and automatically keeps it online, even when lots of people visit at once.</p>
+    <div class="body">
+      <div class="grid g2" style="grid-template-columns:1fr 1fr;align-items:center">
+        <svg viewBox="0 0 500 280" width="100%" style="max-height:280px">
+          <g font-family="Inter" text-anchor="middle">
+            <rect x="20" y="20" width="460" height="240" rx="18" fill="#f3f6ff" stroke="#bcd2fb" stroke-width="2"/>
+            <text x="250" y="48" font-size="15" font-weight="800" fill="#2a6df4">☁️  European Cloud (managed for you)</text>
+            <rect x="55" y="80" width="180" height="70" rx="12" fill="#eef6d8" stroke="#95c11e" stroke-width="1.5"/>
+            <text x="145" y="112" font-size="22">🖥️</text><text x="145" y="138" font-size="13" font-weight="700" fill="#0f1b2d">Frontend</text>
+            <rect x="265" y="80" width="180" height="70" rx="12" fill="#0f1b2d"/>
+            <text x="355" y="112" font-size="22">🧠</text><text x="355" y="138" font-size="13" font-weight="700" fill="#fff">Backend</text>
+            <rect x="55" y="170" width="180" height="64" rx="12" fill="#fff" stroke="#e6ebf1"/>
+            <text x="145" y="200" font-size="20">🤖</text><text x="145" y="222" font-size="12.5" font-weight="700" fill="#0f1b2d">AI engine</text>
+            <rect x="265" y="170" width="180" height="64" rx="12" fill="#fff" stroke="#e6ebf1"/>
+            <text x="355" y="200" font-size="20">🗄️</text><text x="355" y="222" font-size="12.5" font-weight="700" fill="#0f1b2d">Database</text>
+          </g>
+        </svg>
+        <div>
+          <ul class="plain">
+            <li><span class="d b">☁️</span><span><b>Always online</b> — the provider handles servers, updates, and uptime for you.</span></li>
+            <li><span class="d b">📈</span><span><b>Grows automatically</b> — handles quiet days and busy spikes without any manual work.</span></li>
+            <li><span class="d b">🇪🇺</span><span><b>European location</b> — hosted in a Frankfurt data centre, keeping data in Europe.</span></li>
+            <li><span class="d b">🔑</span><span><b>Secrets stay locked away</b> — passwords and keys are stored in a secure vault, never in the website.</span></li>
+            <li><span class="d b">🛠️</span><span><b>Least to maintain</b> — almost nothing to manage yourself day-to-day.</span></li>
+          </ul>
+          <div class="card t2" style="margin-top:20px;padding:18px"><p style="font-size:14.5px"><b>Best for:</b> the live public website — when you want it reliable and low-effort.</p></div>
+        </div>
+      </div>
+    </div>
+    <div class="footer"><span><b>NAVIO</b> · Option A · Cloud hosting</span><span>5 of 9</span></div>
+  </section>
+
+  <!-- 6 VPS / OWN SERVER -->
+  <section class="slide">
+    <span class="eyebrow"><span class="dot"></span> Option B</span>
+    <h1 class="t">Your own server — <span class="a">everything in one box</span></h1>
+    <p class="sub">A VPS (a rented server you control) where every piece of Navio runs together. One single front door handles security and HTTPS, and the rest stays safely tucked away inside.</p>
+    <div class="body">
+      <div class="grid g2" style="grid-template-columns:1.05fr .95fr;align-items:center">
+        <svg viewBox="0 0 520 290" width="100%" style="max-height:290px">
+          <g font-family="Inter" text-anchor="middle">
+            <rect x="15" y="15" width="490" height="260" rx="18" fill="#fff7ef" stroke="#f6c9a4" stroke-width="2"/>
+            <text x="260" y="42" font-size="15" font-weight="800" fill="#c9560a">🖧  One server you control (VPS)</text>
+            <!-- front door -->
+            <rect x="40" y="70" width="120" height="180" rx="12" fill="#0f1b2d"/>
+            <text x="100" y="150" font-size="26">🚪</text><text x="100" y="178" font-size="12.5" font-weight="700" fill="#fff">Front door</text><text x="100" y="196" font-size="10.5" fill="#9fb4cc">(secure HTTPS)</text>
+            <!-- inside pieces -->
+            <rect x="190" y="70" width="140" height="52" rx="10" fill="#eef6d8" stroke="#95c11e"/><text x="260" y="102" font-size="12.5" font-weight="700" fill="#0f1b2d">🖥️  Frontend</text>
+            <rect x="190" y="130" width="140" height="52" rx="10" fill="#dde7f6" stroke="#2a6df4"/><text x="260" y="162" font-size="12.5" font-weight="700" fill="#0f1b2d">🧠  Backend</text>
+            <rect x="190" y="190" width="140" height="52" rx="10" fill="#fff" stroke="#e6ebf1"/><text x="260" y="222" font-size="12.5" font-weight="700" fill="#0f1b2d">🗄️  Database</text>
+            <rect x="350" y="130" width="140" height="52" rx="10" fill="#fff" stroke="#e6ebf1"/><text x="420" y="156" font-size="12" font-weight="700" fill="#0f1b2d">⚡  Traffic guard</text><text x="420" y="172" font-size="10" fill="#5f6f80">(fair-use limits)</text>
+            <path d="M162 160 L186 110" stroke="#ec6607" stroke-width="2.5"/><path d="M162 160 L186 156" stroke="#ec6607" stroke-width="2.5"/>
+          </g>
+        </svg>
+        <div>
+          <ul class="plain">
+            <li><span class="d o">📦</span><span><b>All-in-one</b> — frontend, brain, database, and traffic guard start together with one command.</span></li>
+            <li><span class="d o">🔐</span><span><b>Automatic HTTPS</b> — a single "front door" secures the connection and is the only public entry.</span></li>
+            <li><span class="d o">🎛️</span><span><b>Full control</b> — you own the server and decide exactly how it runs.</span></li>
+            <li><span class="d o">🧱</span><span><b>Self-contained</b> — the database lives right alongside it, so there are no outside dependencies to set up.</span></li>
+            <li><span class="d o">🛠️</span><span><b>You maintain it</b> — more control means you look after updates and the server yourself.</span></li>
+          </ul>
+          <div class="card t2" style="margin-top:20px;padding:18px"><p style="font-size:14.5px"><b>Best for:</b> teams who want everything on infrastructure they fully own and control.</p></div>
+        </div>
+      </div>
+    </div>
+    <div class="footer"><span><b>NAVIO</b> · Option B · Your own server</span><span>6 of 9</span></div>
+  </section>
+
+  <!-- 7 LOCAL -->
+  <section class="slide">
+    <span class="eyebrow"><span class="dot"></span> Option C</span>
+    <h1 class="t">Local instance — <span class="a">a private practice run</span></h1>
+    <p class="sub">Navio running on a developer's own laptop, just for them. Nothing is public — it's the safe sandbox for building new features and testing before anything goes live.</p>
+    <div class="body">
+      <div class="grid g2" style="grid-template-columns:.85fr 1.15fr;align-items:center">
+        <svg viewBox="0 0 400 260" width="100%" style="max-height:260px">
+          <g font-family="Inter" text-anchor="middle">
+            <rect x="40" y="30" width="320" height="200" rx="18" fill="#e7f0ff" stroke="#bcd2fb" stroke-width="2"/>
+            <text x="200" y="60" font-size="15" font-weight="800" fill="#2a6df4">💻  One developer's computer</text>
+            <rect x="80" y="85" width="110" height="56" rx="10" fill="#eef6d8" stroke="#95c11e"/><text x="135" y="118" font-size="12.5" font-weight="700" fill="#0f1b2d">🖥️ Frontend</text>
+            <rect x="210" y="85" width="110" height="56" rx="10" fill="#0f1b2d"/><text x="265" y="118" font-size="12.5" font-weight="700" fill="#fff">🧠 Backend</text>
+            <rect x="80" y="153" width="110" height="56" rx="10" fill="#fff" stroke="#e6ebf1"/><text x="135" y="186" font-size="12.5" font-weight="700" fill="#0f1b2d">🗄️ Database</text>
+            <rect x="210" y="153" width="110" height="56" rx="10" fill="#fff" stroke="#e6ebf1"/><text x="265" y="180" font-size="12" font-weight="700" fill="#0f1b2d">🔒 Private</text><text x="265" y="196" font-size="10" fill="#5f6f80">not public</text>
+          </g>
+        </svg>
+        <div>
+          <ul class="plain">
+            <li><span class="d b">🧪</span><span><b>Safe to experiment</b> — try changes without affecting the real website or any visitors.</span></li>
+            <li><span class="d b">⚡</span><span><b>Quick to start</b> — runs out of the box with one command, no setup or accounts needed.</span></li>
+            <li><span class="d b">🔒</span><span><b>Completely private</b> — only that computer can reach it; nothing is exposed to the internet.</span></li>
+            <li><span class="d b">🔁</span><span><b>The same Navio</b> — what works here behaves the same way once it's hosted for real.</span></li>
+          </ul>
+          <div class="card t2" style="margin-top:20px;padding:18px"><p style="font-size:14.5px"><b>Best for:</b> developers building, fixing, and testing features before they go live.</p></div>
+        </div>
+      </div>
+    </div>
+    <div class="footer"><span><b>NAVIO</b> · Option C · Local instance</span><span>7 of 9</span></div>
+  </section>
+
+  <!-- 8 COMPARISON -->
+  <section class="slide">
+    <span class="eyebrow"><span class="dot"></span> At a glance</span>
+    <h1 class="t">Which one, <span class="a">when?</span></h1>
+    <p class="sub">All three options run the same Navio. Here's the simplest way to think about choosing between them.</p>
+    <div class="body">
+      <table class="cmp">
+        <thead><tr><th>&nbsp;</th><th>☁️ Cloud hosting</th><th>🖧 Your own server</th><th>💻 Local</th></tr></thead>
+        <tbody>
+          <tr><td>Who keeps it running</td><td class="yes">The cloud provider</td><td class="mid">You</td><td>The developer</td></tr>
+          <tr><td>Effort to maintain</td><td class="yes">Lowest</td><td class="mid">Higher</td><td>None — just for testing</td></tr>
+          <tr><td>Open to the public</td><td class="yes">Yes</td><td class="yes">Yes</td><td>No — private</td></tr>
+          <tr><td>Grows with traffic</td><td class="yes">Automatically</td><td class="mid">You add capacity</td><td>Not needed</td></tr>
+          <tr><td>Full control of the box</td><td>Shared / managed</td><td class="yes">Complete</td><td class="yes">Complete</td></tr>
+          <tr><td>Best for</td><td class="yes">The live website</td><td class="mid">Own infrastructure</td><td>Building &amp; testing</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="footer"><span><b>NAVIO</b> · At a glance</span><span>8 of 9</span></div>
+  </section>
+
+  <!-- 9 SUMMARY -->
+  <section class="slide title">
+    <span class="eyebrow" style="color:var(--green)"><span class="dot"></span> In short</span>
+    <h1 style="font-size:48px;margin-top:14px">One Navio,<br><span class="hl">three homes.</span></h1>
+    <p class="lead-w" style="margin-top:18px">A friendly <b style="color:#fff">face</b> people see, a secure <b style="color:#fff">brain</b> behind it, and the freedom to run it wherever suits you best.</p>
+    <div class="grid g3" style="margin-top:38px;gap:18px">
+      <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.13);border-radius:16px;padding:22px">
+        <div style="font-size:32px;margin-bottom:8px">☁️</div>
+        <div style="color:var(--green);font-weight:800;font-size:16px;margin-bottom:6px">Cloud</div>
+        <p style="color:rgba(255,255,255,.7);font-size:14px;line-height:1.55">Easiest and most reliable — perfect for the live public website.</p>
+      </div>
+      <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.13);border-radius:16px;padding:22px">
+        <div style="font-size:32px;margin-bottom:8px">🖧</div>
+        <div style="color:var(--green);font-weight:800;font-size:16px;margin-bottom:6px">Own server</div>
+        <p style="color:rgba(255,255,255,.7);font-size:14px;line-height:1.55">Everything in one box you fully control.</p>
+      </div>
+      <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.13);border-radius:16px;padding:22px">
+        <div style="font-size:32px;margin-bottom:8px">💻</div>
+        <div style="color:var(--green);font-weight:800;font-size:16px;margin-bottom:6px">Local</div>
+        <p style="color:rgba(255,255,255,.7);font-size:14px;line-height:1.55">A private sandbox for building and testing safely.</p>
+      </div>
+    </div>
+    <p class="lead-w" style="margin-top:34px;font-size:18px;color:rgba(255,255,255,.85)">Whichever home you choose, Navio stays the same: <b style="color:#fff">simple for visitors, safe by design.</b></p>
+    <div class="footer"><span><b>NAVIO</b> · Thank you</span><span>9 of 9</span></div>
+  </section>
+
+</div>
+
+<div class="controls">
+  <button id="first" title="First">⏮</button>
+  <button id="prev" title="Previous">‹</button>
+  <span class="count"><span id="cur">1</span> / <span id="total">9</span></span>
+  <button id="next" title="Next">›</button>
+  <button id="last" title="Last">⏭</button>
+</div>
+<div class="hint">← → navigate · F fullscreen · P print</div>
+
+<script>
+(function(){
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var i = 0, n = slides.length;
+  document.getElementById('total').textContent = n;
+  var prog = document.getElementById('progress');
+  function show(x){
+    i = Math.max(0, Math.min(n-1, x));
+    slides.forEach(function(s,k){ s.classList.toggle('active', k===i); });
+    document.getElementById('cur').textContent = i+1;
+    prog.style.width = ((i+1)/n*100) + '%';
+  }
+  document.getElementById('next').onclick=function(){show(i+1);};
+  document.getElementById('prev').onclick=function(){show(i-1);};
+  document.getElementById('first').onclick=function(){show(0);};
+  document.getElementById('last').onclick=function(){show(n-1);};
+  document.addEventListener('keydown',function(e){
+    if(e.key==='ArrowRight'||e.key==='PageDown'||e.key===' '){show(i+1);e.preventDefault();}
+    else if(e.key==='ArrowLeft'||e.key==='PageUp'){show(i-1);e.preventDefault();}
+    else if(e.key==='Home'){show(0);} else if(e.key==='End'){show(n-1);}
+    else if(e.key==='f'||e.key==='F'){if(!document.fullscreenElement){document.documentElement.requestFullscreen();}else{document.exitFullscreen();}}
+    else if(e.key==='p'||e.key==='P'){window.print();}
+  });
+  show(0);
+})();
+</script>
+</body>
+</html>

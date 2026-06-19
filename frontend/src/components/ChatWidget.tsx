@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import NavioChat from './NavioChat'
+import NavioMenuChat from './NavioMenuChat'
 import { Chat, Close, ArrowRight } from './icons'
 import { getBot, type Chatbot } from '../data/bots'
 
@@ -42,12 +43,21 @@ export default function ChatWidget({
             transition={{ duration: 0.22, ease: 'easeOut' }}
             className="h-[min(560px,72vh)] w-[min(380px,calc(100vw-3rem))] origin-bottom-right soft-shadow-lg"
           >
-            <NavioChat
-              bot={bot}
-              className="h-full"
-              onClose={() => setView('closed')}
-              privacyUrl={policyUrl}
-            />
+            {bot.flow === 'menu' ? (
+              <NavioMenuChat
+                bot={bot}
+                className="h-full"
+                onClose={() => setView('closed')}
+                privacyUrl={policyUrl}
+              />
+            ) : (
+              <NavioChat
+                bot={bot}
+                className="h-full"
+                onClose={() => setView('closed')}
+                privacyUrl={policyUrl}
+              />
+            )}
           </motion.div>
         ) : view === 'card' ? (
           <motion.div

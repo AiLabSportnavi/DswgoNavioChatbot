@@ -1,0 +1,31 @@
+%% Master system overview — see 01-product-architecture.md §2
+flowchart TB
+    subgraph EXP["Experience plane — browser (no secrets)"]
+        WIDGET["Embeddable widget<br/>(Shadow DOM)"]
+        SPA["Showcase / Admin SPA<br/>(React + Vite)"]
+    end
+
+    subgraph LOGIC["Logic plane — backend (FastAPI, stateless)"]
+        API["HTTP API<br/>/api/chat · /api/contact<br/>/api/session · /api/config · /health"]
+        GUARD["Guards:<br/>CORS · rate limit · Turnstile session<br/>input caps · brand normalize"]
+    end
+
+    subgraph CAP["Capability plane — external services"]
+        AOAI["Azure OpenAI<br/>(gpt-4.1) — REQUIRED"]
+        PG[("PostgreSQL<br/>config + logs — optional")]
+        SF["Salesforce<br/>CaseHandler — optional"]
+        CLERK["Clerk<br/>admin identity — optional"]
+        TS["Cloudflare Turnstile<br/>bot check — optional"]
+        REDIS[("Redis<br/>shared rate limits — optional")]
+    end
+
+    WIDGET -->|POST /api/chat, /api/contact| API
+    SPA -->|GET/POST /api/config| API
+    SPA -->|sign-in JWT| CLERK
+    API --- GUARD
+    GUARD -->|rate-limit counters| REDIS
+    GUARD -->|verify token| TS
+    API -->|chat completion| AOAI
+    API -->|log turn + read prompt| PG
+    API -->|submit case| SF
+    API -->|verify admin JWT| CLERK

@@ -299,3 +299,21 @@ export function Close(props: SVGProps<SVGSVGElement>) {
     </Svg>
   )
 }
+
+export function Mail(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Svg {...props}>
+      <rect x="3" y="5" width="18" height="14" rx="2.5" />
+      <path d="M3.5 7l8.5 6 8.5-6" />
+    </Svg>
+  )
+}
+
+export function Document(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Svg {...props}>
+      <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" />
+      <path d="M14 3v5h5M9 13h6M9 17h6M9 9h1" />
+    </Svg>
+  )
+}

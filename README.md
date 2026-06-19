@@ -7,27 +7,30 @@
 ```
 backend/                 FastAPI app — the API, never shipped to the browser
   app.py                 endpoints, CORS, rate limiting, Turnstile/session hooks
+  db.py                  Postgres layer — config storage + consent-gated logging
   clerk_auth.py          verifies Clerk login JWTs + admin email-domain allowlist
-  supabase_client.py     config storage + consent-gated conversation logging
-  SYSTEM_PROMPT.md       full Navio prompt with the knowledge base baked in
-  schema.sql             Supabase tables (run once in the SQL editor)
+  chatbot.py             terminal chat loop for quick local testing
+  prompts/               SYSTEM_PROMPT.md (Navio persona + knowledge base) + DATENSCHUTZ.md
+  sql/schema.sql         database tables (run once against the Postgres server)
   requirements.txt       Python dependencies
   Dockerfile             builds the backend image
+  README.md              backend overview + how to host the backend on its own
   .env                   backend secrets (git-ignored) — used by `uvicorn` directly
 frontend/                React + Vite SPA + the embeddable chat widget
   src/                   app code (components, pages, lib/api.ts)
-  Dockerfile             builds the static site into an nginx image
-  nginx.conf             serves the SPA + proxies /api to the backend
-  .env                   frontend env (git-ignored) — the Clerk publishable key
-docker-compose.yml       full-stack server deploy: Caddy + frontend + backend + Redis
-Caddyfile                reverse proxy: /api → backend, everything else → frontend
-.env                     root env (git-ignored) — read by docker-compose
-.env.example             template for the root/backend env (copy → .env)
+  Dockerfile             builds the static site into an nginx image (Cloud Run / any host)
+  nginx.conf             serves the built SPA (static only)
+  vercel.json            SPA routing config for a Vercel deploy
+  .env                   frontend env (git-ignored) — Clerk publishable key + backend URL
+.env.example             template for the backend env (copy → backend/.env)
 ```
 
-Two deployment models live in this repo:
-- **Google Cloud Run** (current production) — backend and frontend as two separate services. See **[DEPLOY.md](DEPLOY.md)**.
-- **Docker Compose** — the whole stack on one machine, one command. See [below](#option-b--with-docker-whole-stack-one-command).
+Deployment models that live in this repo (the backend and frontend deploy **independently**):
+- **Google Cloud Run** — backend and frontend as two container services. See **[DEPLOY.md](DEPLOY.md)**.
+- **Vercel** — the backend as serverless Python functions ([backend/vercel.json](backend/vercel.json)) and/or the frontend as a static SPA ([frontend/vercel.json](frontend/vercel.json)). See the backend's [README](backend/README.md#option-a--vercel-serverless).
+- **Any managed container** — both folders ship a `Dockerfile`; run them on Azure Container Apps, a VPS, or anything that runs containers.
+
+The database is **Supabase** or **Azure Database for PostgreSQL** — both plain Postgres, selected by one `DATABASE_URL` (no code change).
 
 ## What you need
 
@@ -36,39 +39,34 @@ Two deployment models live in this repo:
 |---|---|---|
 | [Node.js](https://nodejs.org) | 20+ | building/running the frontend |
 | [Python](https://python.org) | 3.11+ | running the backend |
-| [Docker Desktop](https://www.docker.com/products/docker-desktop/) | latest | **only** for the Docker run mode (Option B) |
+| [Docker Desktop](https://www.docker.com/products/docker-desktop/) | latest | optional — only to build the container images locally |
 
 **Accounts / keys** (the app talks to three external services)
 | Service | What you get | Where it goes |
 |---|---|---|
 | **Azure OpenAI** | API key + endpoint + deployment name | backend env (secret) |
-| **Supabase** | project URL + service-role key | backend env (secret) |
+| **Postgres** — Supabase *or* Azure | connection string (`DATABASE_URL`) | backend env (secret) |
 | **Clerk** (login) | publishable key (`pk_…`) + secret key (`sk_…`) | publishable → frontend; secret → backend |
 
-> The app **boots without Supabase or Clerk** (config falls back to disk; admin auth falls back to a token). Only Azure is strictly required to get a chat reply.
+> The app **boots without a database or Clerk** (config falls back to disk; admin auth falls back to a token). Only Azure OpenAI is strictly required to get a chat reply.
 
 ---
 
 ## 1. Environment setup (do this once)
 
-Secrets live in **git-ignored `.env` files** — never committed. There are three, and which you fill depends on how you run (see the table). Copy each from its `.example` template and fill in the values.
+Secrets live in **git-ignored `.env` files** — never committed. For local dev there are two; copy each from its `.example` template and fill in the values.
 
 | File | Read by | Needed for |
 |---|---|---|
 | `frontend/.env` | the frontend (Vite) | **always** |
-| `backend/.env` | the backend, when run with `uvicorn` | Option A (no Docker) |
-| `.env` (root) | the backend, via Docker Compose | Option B (Docker) |
-
-> `.env` (root) and `backend/.env` hold the **same backend values** — you only fill the one matching your run mode.
+| `backend/.env` | the backend (`uvicorn`) | local backend dev |
 
 ```powershell
-# Frontend (always)
 Copy-Item frontend\.env.example frontend\.env
-
-# Backend — pick ONE depending on how you run:
-Copy-Item .env.example backend\.env    # Option A: local dev with uvicorn
-Copy-Item .env.example .env            # Option B: Docker Compose
+Copy-Item .env.example backend\.env
 ```
+
+> On a cloud host the backend's secrets go into that host's env/secret store (Cloud Run Secret Manager, Vercel Environment Variables), **not** a `.env` file — see [DEPLOY.md](DEPLOY.md) and the [backend README](backend/README.md#environment-variables).
 
 Then open each `.env` and fill in:
 
@@ -77,8 +75,7 @@ Then open each `.env` and fill in:
 AZURE_AI_CHATBOT_API_KEY=...                 # from Azure portal
 AZURE_AI_CHATBOT_OPENAI_ENDPOINT=https://...openai.azure.com/openai/v1
 AZURE_AI_CHATBOT_DEPLOYMENT_NAME=gpt-4.1
-SUPABASE_URL=https://xxxx.supabase.co        # optional
-SUPABASE_SERVICE_ROLE_KEY=...                # optional, secret
+DATABASE_URL=postgresql://user:pass@host:6432/postgres?sslmode=require  # optional, secret
 CLERK_ISSUER=https://your-app.clerk.accounts.dev
 CLERK_SECRET_KEY=sk_test_...                 # secret — admin login
 ADMIN_EMAIL_DOMAINS=sportnavi.de             # who may edit the system prompt
@@ -91,9 +88,7 @@ All other settings (rate limits, input caps, Turnstile, Redis) have safe default
 
 ---
 
-## 2. Running the app — two ways
-
-### Option A — without Docker (local development)
+## 2. Run locally (development)
 
 Best for coding: hot-reload on both sides. **Two terminals.**
 
@@ -109,138 +104,37 @@ npm install
 npm run dev                              # → http://localhost:5173
 ```
 
-Open **http://localhost:5173**. The frontend calls `/api/...`, and Vite proxies that to the backend on port 8000 (see [vite.config.ts](frontend/vite.config.ts)), so the browser stays same-origin — no CORS.
+Open **http://localhost:5173**. With `VITE_NAVIO_API` left empty, the frontend calls `/api/...` and Vite proxies that to the backend on port 8000 (see [vite.config.ts](frontend/vite.config.ts)), so the browser stays same-origin — no CORS.
 
-> If you also have the Docker stack running, stop it first (`docker compose down`) — it would otherwise occupy port 8000.
-
-### Option B — with Docker (whole stack, one command)
-
-Best for running the app like production on one machine — no Node/Python needed, just Docker. Caddy serves everything on one port.
-
-```powershell
-docker compose up -d --build             # build + start everything
-docker compose logs -f                   # watch the logs
-docker compose down                      # stop everything
-```
-
-Open **http://localhost**. One container set, behind Caddy:
-
-```
-http://localhost  ─▶ Caddy ─┬─ /api/*, /health ─▶ backend (FastAPI) ─▶ Redis
-                            └─ everything else ─▶ frontend (nginx: SPA + widget)
-```
-
-What compose handles for you:
-- **Builds both images** — the frontend (static site → nginx) and the backend.
-- **Bakes the Clerk key into the frontend** at build time from the committed [frontend/.env.production](frontend/.env.production) (the publishable key is public; Vite inlines it — same path as the Cloud Run build).
-- **Redis** is wired automatically for shared rate limits — you don't set `REDIS_URL`.
-
-For a public server, point your domain at the host and set `NAVIO_DOMAIN` in the root `.env` (Caddy then auto-issues HTTPS):
-
-```ini
-NAVIO_DOMAIN=navio.sportnavi.de     # ":80" = local/plain-HTTP testing
-WORKERS=2                           # ≈ 2 × CPU cores
-```
-
-### Which do I use?
-
-| You want to… | Use |
-|---|---|
-| Edit code with hot-reload | **Option A** (no Docker) |
-| Run the whole app like production on one box | **Option B** (Docker) |
-| Deploy to the cloud (current production) | Cloud Run — see [DEPLOY.md](DEPLOY.md) |
+> **Database in dev is optional.** Point `DATABASE_URL` at a Supabase (or Azure) dev project to test config persistence + conversation logging, or leave it empty — the app still boots and chats (the prompt falls back to the on-disk file; logging is skipped).
 
 ---
 
-## 3. Deploy on your own server (step by step)
+## 3. Deploy (backend and frontend, independently)
 
-The friendly, start-to-finish version of Option B — host the **whole app** (website
-+ chat + login) on one machine, e.g. a VPS from Hetzner, DigitalOcean, or AWS EC2.
-Backend and frontend run **together** here; you don't host them separately.
+Backend and frontend are **separate services** — deploy each to whatever host you like.
+The order matters: **database → backend → frontend → lock down CORS.** The golden rule:
+**secret keys** (Azure key, `DATABASE_URL`, Clerk `sk_…`) live **only** on the backend;
+the frontend only ever gets **public** values (Clerk `pk_…`, the backend URL).
 
-### First — collect these 7 values
+**1. Database.** Create a **Supabase** project (or Azure Database for PostgreSQL) and run
+[backend/sql/schema.sql](backend/sql/schema.sql) once — see
+[backend README → Database setup](backend/README.md#database-setup) for the exact command
+and the pooler‑port (`DATABASE_URL`) note.
 
-Everything you fill in comes from three accounts. Get them once and keep them in a
-safe note:
+**2. Backend** — deploy [backend/](backend/) to:
+- **Google Cloud Run** — full copy‑paste runbook in **[DEPLOY.md](DEPLOY.md)** (recommended; keeps background logging + in‑memory rate limiting working).
+- **Vercel** — serverless Python; wiring is in [backend/vercel.json](backend/vercel.json). See [backend README → Option A](backend/README.md#option-a--vercel-serverless) (incl. the Upstash `REDIS_URL` note for rate limiting).
+- **Any container host** — build [backend/Dockerfile](backend/Dockerfile) (Azure Container Apps, a VPS, …).
 
-| From | Value | Secret? |
-|---|---|---|
-| **Azure OpenAI** | API key | 🔒 secret |
-| | endpoint URL | public |
-| | deployment name (e.g. `gpt-4.1`) | public |
-| **Supabase** | project URL | public |
-| | service-role key | 🔒 secret |
-| **Clerk** | publishable key (`pk_…`) | public |
-| | secret key (`sk_…`) | 🔒 secret |
+Copy the backend's public URL — the frontend needs it.
 
-### Step 1 — install Docker on the server
+**3. Frontend** — set `VITE_NAVIO_API` to that backend URL (and `VITE_CLERK_PUBLISHABLE_KEY`), then deploy [frontend/](frontend/) to:
+- **Vercel** — static SPA; config in [frontend/vercel.json](frontend/vercel.json). Set the two `VITE_*` vars in the project's Environment Variables.
+- **Cloud Run / any container** — build [frontend/Dockerfile](frontend/Dockerfile) with `--build-arg VITE_NAVIO_API=https://your-backend` (the Clerk key comes from [frontend/.env.production](frontend/.env.production)).
 
-[Docker Desktop](https://www.docker.com/products/docker-desktop/) (Windows/Mac) or
-`docker` + the compose plugin (Linux). Nothing else — no Node, no Python.
-
-### Step 2 — fill in two files
-
-**📄 `.env`** (project root) — copy the template, then fill it in:
-
-```powershell
-Copy-Item .env.example .env
-```
-```ini
-AZURE_AI_CHATBOT_API_KEY=<your Azure key>
-AZURE_AI_CHATBOT_OPENAI_ENDPOINT=https://your-resource.openai.azure.com/openai/v1
-AZURE_AI_CHATBOT_DEPLOYMENT_NAME=gpt-4.1
-SUPABASE_URL=https://xxxx.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=<your Supabase service-role key>
-CLERK_ISSUER=https://your-app.clerk.accounts.dev
-CLERK_SECRET_KEY=<your Clerk sk_ key>
-ADMIN_EMAIL_DOMAINS=sportnavi.de            # who may edit the system prompt
-NAVIO_DOMAIN=navio.yourdomain.com           # or ":80" to test without a domain
-```
-
-**📄 `frontend/.env.production`** — the only value the website's browser needs:
-
-```ini
-VITE_CLERK_PUBLISHABLE_KEY=<your Clerk pk_ key>
-```
-
-### Step 3 — create the Supabase tables (one time)
-
-Open your Supabase project → **SQL editor** → paste and run the contents of
-[backend/schema.sql](backend/schema.sql). (Skip if you reuse an existing Supabase
-that already has the tables.)
-
-### Step 4 — start everything
-
-```bash
-docker compose up -d --build      # build + start
-docker compose logs -f            # watch it
-docker compose down               # stop
-```
-
-### Step 5 — point your domain at the server
-
-Add a DNS **`A` record** for `navio.yourdomain.com` pointing to the server's IP.
-Caddy automatically fetches a free HTTPS certificate for the `NAVIO_DOMAIN` you set.
-
-✅ **Done.** Open `https://navio.yourdomain.com` — website, chat, login, and the
-admin editor all run from that one address.
-
-> Just testing with no domain? Set `NAVIO_DOMAIN=:80` and open `http://localhost`.
-
-### Hosting backend and frontend separately instead
-
-If you'd rather host each piece as its own service (cloud platforms like Cloud Run),
-the order matters: **deploy the backend first**, copy its URL, then point the
-frontend at that URL (`frontend/nginx.conf`) before deploying it, and finally add
-the frontend's address to `ALLOWED_ORIGINS`. The full copy-paste runbook is in
-**[DEPLOY.md](DEPLOY.md)**.
-
-### The one rule to remember
-
-- **Secret keys** (Azure key, Supabase service-role, Clerk `sk_…`) → only ever on
-  the **backend / server**. Never in the frontend.
-- **Public values** (Clerk `pk_…`, the backend URL) → fine in the **frontend** —
-  they're meant to be seen.
+**4. Lock down CORS.** Add the frontend's public origin to `ALLOWED_ORIGINS` on the backend
+and redeploy it. Then open the site, accept the privacy notice, and send a test message.
 
 ---
 
@@ -366,9 +260,10 @@ separate counter and they don't talk to each other.
   run with multiple workers (`uvicorn --workers N`) — each worker is a separate process, so
   Redis is what unifies their counters. One env var, no code change.
 
-**When to turn it on:** the moment you run more than one worker or container. Source can be
-managed (Azure Cache for Redis) or a self-hosted Redis container. Until then, leave
-`REDIS_URL` empty.
+**When to turn it on:** the moment you run more than one worker or container — or **any**
+serverless deploy (Vercel), where each invocation is isolated and in-memory counters never
+add up. Source can be managed (Upstash, Azure Cache for Redis) or a self-hosted Redis
+container. Until then (e.g. Cloud Run `max-instances 1`), leave `REDIS_URL` empty.
 
 ### What limits the *total* number of users?
 

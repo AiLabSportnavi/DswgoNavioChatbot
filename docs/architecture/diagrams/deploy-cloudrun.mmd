@@ -1,0 +1,24 @@
+%% Cloud Run deployment (primary) — see 04-infrastructure-deployment.md §2
+flowchart TB
+    USER["Browser<br/>sportnavi.de"]
+
+    subgraph GCP["Google Cloud — europe region"]
+        FE["Cloud Run: frontend<br/>(nginx · SPA + widget)"]
+        BE["Cloud Run: backend<br/>(FastAPI · stateless)"]
+        SM["Secret Manager<br/>Azure key · DB URL · Clerk secret · SF secret"]
+    end
+
+    subgraph EXT["External services"]
+        AOAI["Azure OpenAI (gpt-4.1)"]
+        PG[("Azure PostgreSQL<br/>Flexible Server")]
+        SF["Salesforce CaseHandler"]
+        CLERK["Clerk"]
+    end
+
+    USER -->|HTTPS| FE
+    USER -->|HTTPS /api/*| BE
+    BE -->|secrets at boot| SM
+    BE --> AOAI
+    BE --> PG
+    BE --> SF
+    BE --> CLERK

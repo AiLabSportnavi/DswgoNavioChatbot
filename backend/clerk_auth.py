@@ -15,7 +15,7 @@ to read their primary, verified email. (Admin saves are rare, so the extra call 
 cheap.) If you later add a Clerk JWT template that injects an `email` claim, this
 module will prefer that claim and skip the lookup automatically.
 
-Deliberately OPTIONAL, like supabase_client: when CLERK_ISSUER is unset,
+Deliberately OPTIONAL, like the db module: when CLERK_ISSUER is unset,
 ``clerk_enabled()`` is False and ``require_admin`` falls back to the legacy
 ADMIN_TOKEN check in app.py. So the app still boots and runs without Clerk.
 

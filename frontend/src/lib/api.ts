@@ -94,3 +94,46 @@ async function postConfig(path: string, content: string, token?: string | null):
 /** Save the system prompt. Pass the Clerk session token (from `getToken()`). */
 export const saveSystemPrompt = (content: string, token?: string | null) =>
   postConfig('/api/config/system-prompt', content, token)
+
+/* ── Kontakt-Formular ──────────────────────────────────────────────────────
+ * Submission for the "Navio Plus" menu bot's contact form. Posts to OUR backend
+ * (POST /api/contact), which calls the Salesforce CaseHandler flow server-side —
+ * the Salesforce credentials must never reach the browser. When the backend has no
+ * Salesforce credentials it returns a simulated success so the flow stays demoable.
+ */
+/**
+ * All fields carry the EXACT Salesforce picklist values (membership/grund/thema/
+ * kurzbeschreibung) or free text (betreff/name/email/.../nachricht). The dropdowns
+ * cascade so only valid combinations can be submitted — see data/salesforceOptions.ts.
+ */
+export type ContactPayload = {
+  membership: string
+  grund: string
+  thema: string
+  kurzbeschreibung: string
+  betreff: string
+  name: string
+  email: string
+  telefon?: string
+  kundennummer?: string
+  nachricht: string
+}
+
+export async function submitContact(
+  payload: ContactPayload,
+  signal?: AbortSignal,
+): Promise<void> {
+  const res = await fetch(`${API_BASE}/api/contact`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+    signal,
+  })
+  if (!res.ok) {
+    const detail = await res
+      .json()
+      .then((d: { detail?: unknown }) => (typeof d?.detail === 'string' ? d.detail : undefined))
+      .catch(() => undefined)
+    throw new Error(detail ?? `Senden fehlgeschlagen (${res.status}). Bitte später erneut versuchen.`)
+  }
+}

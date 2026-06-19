@@ -1,7 +1,7 @@
 # =============================================================================
-# Navio frontend for Cloud Run — multi-stage build.
+# Navio frontend for Cloud Run / any container — multi-stage build.
 #   Stage 1 (node):  install deps + build the Vite SPA into /app/dist
-#   Stage 2 (nginx): serve those static files AND reverse-proxy /api -> backend
+#   Stage 2 (nginx): serve those static files (static-only; no /api proxy)
 # The final image is just nginx + static assets (no Node, tiny + fast).
 # =============================================================================
 
@@ -13,16 +13,22 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 
-# Build. VITE_NAVIO_API is intentionally left UNSET so the SPA uses relative
-# URLs (/api/chat) — nginx proxies them to the backend below, keeping the browser
-# same-origin (no CORS).
 COPY . .
 
-# `npm run build` (Vite production mode) inlines VITE_* vars into the JS bundle.
-# The Clerk PUBLISHABLE key comes from the committed frontend/.env.production
-# (browser-safe — it ships in the bundle anyway). This works the same for
-# `docker compose` and Cloud Run `--source`, so no build args are needed.
-RUN npm run build
+# Backend origin baked into the bundle. nginx no longer proxies /api, so the SPA
+# calls the backend directly at this absolute URL (CORS-allowed by the backend) —
+# the same wiring as the Vercel deploy. Two ways to set it, in order of precedence:
+#   1. docker build --build-arg VITE_NAVIO_API=https://your-backend.run.app  (manual builds)
+#   2. VITE_NAVIO_API=... in frontend/.env.production  (committed; used by Cloud Run --source)
+# We only export the build arg when it's non-empty, so an unset arg lets the value
+# from .env.production win instead of clobbering it with an empty string.
+ARG VITE_NAVIO_API=
+
+# `npm run build` (Vite production mode) inlines VITE_* vars into the JS bundle and
+# reads frontend/.env.production (also the source of the browser-safe Clerk
+# PUBLISHABLE key).
+RUN if [ -n "$VITE_NAVIO_API" ]; then export VITE_NAVIO_API="$VITE_NAVIO_API"; fi; \
+    npm run build
 # Also build the standalone embeddable widget (separate IIFE bundle -> dist-widget/).
 # The widget gets its backend URL at runtime from the host page's data-api attribute,
 # so it doesn't need VITE_NAVIO_API baked in.

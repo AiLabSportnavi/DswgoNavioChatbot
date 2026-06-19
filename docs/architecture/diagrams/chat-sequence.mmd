@@ -1,0 +1,17 @@
+%% /api/chat request lifecycle — see 02-backend-architecture.md §2
+sequenceDiagram
+    participant B as Browser (widget)
+    participant A as app.py (FastAPI)
+    participant TS as Turnstile/session
+    participant AI as Azure OpenAI
+    participant DB as PostgreSQL (optional)
+
+    B->>A: POST /api/chat {message, history, consent}
+    A->>TS: session token valid? (only if Turnstile enabled)
+    A->>A: refresh_config() (TTL-gated DB read)
+    A->>A: build [system prompt] + history + message
+    A->>AI: chat.completions.create(...)
+    AI-->>A: reply (or error -> friendly reply)
+    A->>A: normalize_brand(reply)
+    A-->>B: {reply}
+    A--)DB: background: log_conversation (consent-gated, IP hashed)

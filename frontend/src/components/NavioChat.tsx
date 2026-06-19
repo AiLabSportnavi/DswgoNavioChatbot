@@ -40,12 +40,21 @@ export default function NavioChat({
   onClose,
   privacyNotice,
   privacyUrl,
+  embedded = false,
+  initialConsent = false,
 }: {
   bot: Chatbot
   className?: string
   onClose?: () => void
   privacyNotice?: string
   privacyUrl?: string
+  /**
+   * When embedded inside another shell (e.g. the Navio Plus menu), drop this
+   * component's own header + footer and outer border — the host provides them.
+   */
+  embedded?: boolean
+  /** Skip the consent gate because the host already collected consent. */
+  initialConsent?: boolean
 }) {
   const notice = privacyNotice ?? bot.privacy.notice
   const policyUrl = privacyUrl ?? bot.privacy.url
@@ -59,7 +68,7 @@ export default function NavioChat({
   const [started, setStarted] = useState(false)
   // Consent is required at the start of every conversation (not persisted across
   // sessions) so the Datenschutz notice is always shown before any data is processed.
-  const [consented, setConsented] = useState(false)
+  const [consented, setConsented] = useState(initialConsent)
   const [declined, setDeclined] = useState(false)
   const [showInfo, setShowInfo] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -111,9 +120,12 @@ export default function NavioChat({
 
   return (
     <div
-      className={`flex flex-col overflow-hidden rounded-3xl border border-black/[0.06] bg-white ${className}`}
+      className={`flex flex-col overflow-hidden bg-white ${
+        embedded ? '' : 'rounded-3xl border border-black/[0.06]'
+      } ${className}`}
     >
-      {/* header — Sportnavi green */}
+      {/* header — Sportnavi green (hidden when embedded; host provides it) */}
+      {!embedded && (
       <div className="flex items-center gap-3 bg-brand-green px-4 py-3 text-white">
         <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-brand-green">
           <bot.icon className="h-5 w-5" />
@@ -154,6 +166,7 @@ export default function NavioChat({
           </button>
         )}
       </div>
+      )}
 
       {/* body */}
       {showInfo ? (
@@ -316,17 +329,19 @@ export default function NavioChat({
         </div>
       )}
 
-      {/* always-visible Datenschutz / Privacy Policy link */}
-      <div className="border-t border-black/[0.04] bg-white px-4 py-2 text-center">
-        <a
-          href={policyUrl}
-          target="_blank"
-          rel="noreferrer"
-          className="text-[11px] text-zinc-400 underline transition-colors hover:text-ink"
-        >
-          Datenschutz · Privacy Policy
-        </a>
-      </div>
+      {/* always-visible Datenschutz / Privacy Policy link (host provides it when embedded) */}
+      {!embedded && (
+        <div className="border-t border-black/[0.04] bg-white px-4 py-2 text-center">
+          <a
+            href={policyUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="text-[11px] text-zinc-400 underline transition-colors hover:text-ink"
+          >
+            Datenschutz · Privacy Policy
+          </a>
+        </div>
+      )}
     </div>
   )
 }

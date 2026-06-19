@@ -2,7 +2,7 @@
 Navio — the Sportnavi guide chatbot over Azure OpenAI (gpt-4.1).
 
 Reads the full system prompt (Navio persona + knowledge base baked in) from
-SYSTEM_PROMPT.md and runs a terminal chat loop.
+prompts/SYSTEM_PROMPT.md and runs a terminal chat loop.
 
 Run:  python chatbot.py
 """
@@ -26,7 +26,9 @@ for _stream in (sys.stdout, sys.stderr):
     except (AttributeError, ValueError):
         pass
 
-SYSTEM_PROMPT = (Path(__file__).parent / "SYSTEM_PROMPT.md").read_text(encoding="utf-8")
+SYSTEM_PROMPT = (Path(__file__).parent / "prompts" / "SYSTEM_PROMPT.md").read_text(
+    encoding="utf-8"
+)
 
 # The model sometimes ignores the prompt's spelling rule and writes "SportNavi".
 # Enforce the canonical "Sportnavi" deterministically; keep lowercase "sportnavi"

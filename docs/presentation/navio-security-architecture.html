@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Navio AI Chatbot — Architecture, Security &amp; Compliance</title>
+<style>
+  :root{
+    --navy:#0f1b2d;
+    --navy-2:#16263d;
+    --slate:#1f3147;
+    --ink:#0b1320;
+    --muted:#5b6b7e;
+    --line:#e4e9ef;
+    --paper:#ffffff;
+    --paper-2:#f5f8fb;
+    --paper-3:#eef3f8;
+    --green:#95c11e;
+    --green-d:#7da015;
+    --green-soft:#eef6d8;
+    --orange:#ec6607;
+    --orange-soft:#fdebdd;
+    --blue:#2a6df4;
+    --blue-soft:#e7f0ff;
+    --teal:#0d9488;
+    --red:#dc3545;
+    --shadow:0 18px 50px -18px rgba(15,27,45,.45);
+    --shadow-sm:0 6px 20px -8px rgba(15,27,45,.3);
+    --radius:16px;
+    --font:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;}
+  body{
+    font-family:var(--font);
+    background:
+      radial-gradient(1200px 600px at 80% -10%, #1b2c44 0%, transparent 60%),
+      radial-gradient(1000px 500px at -10% 110%, #16263d 0%, transparent 55%),
+      var(--navy);
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+    overflow:hidden;
+  }
+
+  /* ---------- Deck / slide framework ---------- */
+  .deck{height:100vh;width:100vw;position:relative;}
+  .slide{
+    position:absolute;inset:0;
+    display:none;
+    padding:54px 72px 64px;
+    flex-direction:column;
+    background:var(--paper);
+    opacity:0;
+    transform:translateY(14px);
+    transition:opacity .5s ease, transform .5s ease;
+    overflow:hidden;
+  }
+  .slide.active{display:flex;opacity:1;transform:none;}
+  .slide::before{
+    content:"";position:absolute;left:0;top:0;bottom:0;width:8px;
+    background:linear-gradient(180deg,var(--green),var(--orange));
+  }
+
+  /* slide chrome */
+  .eyebrow{
+    display:inline-flex;align-items:center;gap:9px;
+    font-size:12px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--green-d);
+  }
+  .eyebrow .dot{width:8px;height:8px;border-radius:50%;background:var(--orange);}
+  h1.slide-title{font-size:38px;line-height:1.1;font-weight:800;color:var(--navy);margin:10px 0 6px;letter-spacing:-.02em;}
+  h1.slide-title .accent{color:var(--green-d);}
+  .subtitle{font-size:16px;color:var(--muted);font-weight:500;max-width:980px;line-height:1.5;}
+  .slide-body{flex:1;display:flex;flex-direction:column;justify-content:center;margin-top:22px;min-height:0;}
+
+  .footer{
+    position:absolute;left:72px;right:72px;bottom:22px;
+    display:flex;align-items:center;justify-content:space-between;
+    font-size:11.5px;color:var(--muted);font-weight:600;letter-spacing:.04em;
+    border-top:1px solid var(--line);padding-top:12px;
+  }
+  .footer .brand-min{display:flex;align-items:center;gap:8px;color:var(--navy);}
+  .footer .brand-min b{font-weight:800;}
+  .footer .conf{display:inline-flex;align-items:center;gap:6px;color:var(--orange);}
+
+  /* ---------- helpers ---------- */
+  .grid{display:grid;gap:18px;}
+  .g2{grid-template-columns:repeat(2,1fr);}
+  .g3{grid-template-columns:repeat(3,1fr);}
+  .g4{grid-template-columns:repeat(4,1fr);}
+  .card{
+    background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);
+    padding:22px;box-shadow:var(--shadow-sm);position:relative;
+  }
+  .card.tinted{background:var(--paper-2);}
+  .card h3{font-size:16px;color:var(--navy);margin-bottom:8px;font-weight:700;display:flex;align-items:center;gap:9px;}
+  .card p{font-size:13.5px;color:var(--muted);line-height:1.55;}
+  .card .ico{
+    width:34px;height:34px;border-radius:9px;display:grid;place-items:center;flex:none;
+    background:var(--green-soft);color:var(--green-d);
+  }
+  .card .ico.o{background:var(--orange-soft);color:var(--orange);}
+  .card .ico.b{background:var(--blue-soft);color:var(--blue);}
+
+  .pill{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;
+    padding:5px 11px;border-radius:999px;background:var(--green-soft);color:var(--green-d);letter-spacing:.03em;}
+  .pill.o{background:var(--orange-soft);color:var(--orange);}
+  .pill.b{background:var(--blue-soft);color:var(--blue);}
+  .pill.n{background:var(--paper-3);color:var(--navy);}
+
+  .kpi{font-size:46px;font-weight:800;color:var(--navy);letter-spacing:-.03em;line-height:1;}
+  .kpi .u{font-size:16px;color:var(--muted);font-weight:600;margin-left:4px;}
+  .kpi-l{font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--green-d);margin-top:8px;}
+
+  .chip{display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:600;color:var(--navy);
+    background:var(--paper-2);border:1px solid var(--line);border-radius:10px;padding:9px 13px;}
+  .chk{color:var(--green-d);font-weight:800;}
+
+  .config{
+    font-family:'SFMono-Regular',ui-monospace,'Cascadia Code',Menlo,Consolas,monospace;
+    font-size:13px;background:var(--ink);color:#cfe3ff;border-radius:12px;padding:16px 18px;line-height:1.7;
+    border:1px solid #233651;overflow:hidden;
+  }
+  .config .k{color:#7fd0ff;}
+  .config .v{color:var(--green);font-weight:600;}
+  .config .red{color:var(--orange);font-weight:700;}
+  .config .cm{color:#5d7794;}
+
+  .lead{font-size:15px;line-height:1.65;color:var(--slate);}
+  .lead b{color:var(--navy);}
+  ul.clean{list-style:none;display:flex;flex-direction:column;gap:11px;}
+  ul.clean li{display:flex;gap:11px;font-size:14px;color:var(--slate);line-height:1.45;align-items:flex-start;}
+  ul.clean li .b{flex:none;width:22px;height:22px;border-radius:7px;background:var(--green-soft);color:var(--green-d);
+    display:grid;place-items:center;font-size:12px;font-weight:800;margin-top:1px;}
+  ul.clean li .b.o{background:var(--orange-soft);color:var(--orange);}
+
+  svg{display:block;}
+  .flow-cap{font-size:11.5px;fill:var(--muted);font-weight:600;}
+
+  /* ---------- title slide ---------- */
+  .title-slide{background:
+      radial-gradient(900px 500px at 85% 0%, #1e3252 0%, transparent 60%),
+      linear-gradient(160deg,var(--navy) 0%, #0b1626 100%);
+    color:#fff;justify-content:center;}
+  .title-slide::before{background:linear-gradient(180deg,var(--green),var(--orange));}
+  .title-slide .footer{border-color:rgba(255,255,255,.12);color:rgba(255,255,255,.55);}
+  .title-slide .footer .brand-min{color:#fff;}
+  .brandmark{display:flex;align-items:center;gap:14px;margin-bottom:30px;}
+  .brandmark .logo{
+    width:54px;height:54px;border-radius:14px;display:grid;place-items:center;
+    background:linear-gradient(135deg,var(--green),var(--green-d));box-shadow:0 10px 30px -8px rgba(149,193,30,.6);
+  }
+  .brandmark .wn{font-size:24px;font-weight:800;letter-spacing:-.01em;}
+  .brandmark .wn span{color:var(--green);}
+  .brandmark .tag{font-size:12px;color:rgba(255,255,255,.55);font-weight:600;letter-spacing:.12em;text-transform:uppercase;}
+  .title-slide h1{font-size:60px;line-height:1.04;font-weight:800;letter-spacing:-.03em;max-width:1050px;}
+  .title-slide h1 .hl{background:linear-gradient(90deg,var(--green),var(--orange));-webkit-background-clip:text;background-clip:text;color:transparent;}
+  .title-slide .sub{font-size:19px;color:rgba(255,255,255,.7);margin-top:20px;max-width:760px;line-height:1.5;font-weight:500;}
+  .title-meta{display:flex;gap:14px;margin-top:34px;flex-wrap:wrap;}
+  .title-meta .m{display:flex;align-items:center;gap:9px;font-size:13px;font-weight:600;color:rgba(255,255,255,.85);
+    background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:10px 14px;}
+  .title-meta .m svg{color:var(--green);}
+
+  /* layered model */
+  .layer{display:flex;align-items:center;gap:16px;background:var(--paper-2);border:1px solid var(--line);
+    border-left:5px solid var(--green);border-radius:12px;padding:13px 18px;box-shadow:var(--shadow-sm);}
+  .layer .ln{width:30px;height:30px;border-radius:8px;background:var(--navy);color:#fff;display:grid;place-items:center;
+    font-size:13px;font-weight:800;flex:none;}
+  .layer .lt{font-size:15px;font-weight:700;color:var(--navy);}
+  .layer .ld{font-size:12.5px;color:var(--muted);margin-top:1px;}
+  .layer .lr{margin-left:auto;}
+
+  /* timeline / process */
+  .barwrap{display:flex;flex-direction:column;gap:7px;}
+  .barwrap .bl{display:flex;justify-content:space-between;font-size:12.5px;font-weight:700;color:var(--navy);}
+  .bar{height:14px;border-radius:8px;background:var(--paper-3);overflow:hidden;}
+  .bar > i{display:block;height:100%;border-radius:8px;background:linear-gradient(90deg,var(--green),var(--green-d));}
+  .bar > i.o{background:linear-gradient(90deg,var(--orange),#c9560a);}
+
+  .quote{font-size:24px;line-height:1.4;font-weight:600;color:var(--navy);max-width:920px;}
+  .quote .accent{color:var(--green-d);}
+
+  /* nav controls */
+  .controls{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:50;
+    display:flex;align-items:center;gap:6px;background:rgba(15,27,45,.85);backdrop-filter:blur(8px);
+    border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:6px 8px;box-shadow:var(--shadow);}
+  .controls button{appearance:none;border:none;background:transparent;color:#dbe6f3;width:34px;height:34px;border-radius:50%;
+    cursor:pointer;font-size:16px;display:grid;place-items:center;transition:background .15s;}
+  .controls button:hover{background:rgba(255,255,255,.14);}
+  .controls .count{color:#fff;font-size:12.5px;font-weight:700;min-width:62px;text-align:center;letter-spacing:.04em;}
+  .progress{position:fixed;top:0;left:0;height:4px;background:linear-gradient(90deg,var(--green),var(--orange));z-index:60;transition:width .4s ease;}
+  .hint{position:fixed;bottom:20px;right:22px;z-index:50;font-size:11px;color:rgba(255,255,255,.4);font-weight:600;}
+
+  @media print{
+    body{overflow:visible;background:#fff;}
+    .slide{display:flex !important;opacity:1 !important;transform:none !important;position:relative;
+      page-break-after:always;height:100vh;width:100vw;}
+    .controls,.progress,.hint{display:none !important;}
+  }
+</style>
+</head>
+<body>
+<div class="progress" id="progress"></div>
+<div class="deck" id="deck">
+
+  <!-- ============ SLIDE 1 — TITLE / EXEC SUMMARY ============ -->
+  <section class="slide title-slide active">
+    <div class="brandmark">
+      <div class="logo">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none"><path d="M12 2L20 6V12C20 17 16.5 20.5 12 22C7.5 20.5 4 17 4 12V6L12 2Z" fill="#0f1b2d"/><path d="M9 12.5L11 14.5L15.5 9.5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div>
+        <div class="wn">Navio<span>.</span> <span style="color:var(--orange)">AI</span></div>
+        <div class="tag">SportNavi · Secure Conversational AI</div>
+      </div>
+    </div>
+    <h1>The Navio AI Chatbot<br><span class="hl">Architecture, Security &amp; Compliance</span></h1>
+    <p class="sub">A security-first conversational AI platform built on Azure OpenAI — engineered for production scale, abuse resistance, and privacy-focused operation across European audiences.</p>
+    <div class="title-meta">
+      <div class="m"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 2L20 6V12C20 17 16.5 20.5 12 22C7.5 20.5 4 17 4 12V6L12 2Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg> 7-Layer Defense Model</div>
+      <div class="m"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/><path d="M12 7v5l3 2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg> Azure OpenAI · GPT-4.1</div>
+      <div class="m"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M3 12h18M12 3a15 15 0 010 18M12 3a15 15 0 000 18" stroke="currentColor" stroke-width="2"/></svg> EU-Hosted Infrastructure</div>
+      <div class="m"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M4 7l8-4 8 4-8 4-8-4z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M4 12l8 4 8-4M4 17l8 4 8-4" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg> GDPR-Principle Aligned</div>
+    </div>
+    <div class="footer">
+      <span class="brand-min"><b>NAVIO</b> · Executive Architecture Briefing</span>
+      <span class="conf">● CONFIDENTIAL</span>
+    </div>
+  </section>
+
+  <!-- ============ SLIDE 2 — SYSTEM OVERVIEW ============ -->
+  <section class="slide">
+    <span class="eyebrow"><span class="dot"></span> System Overview</span>
+    <h1 class="slide-title">A <span class="accent">controlled</span>, isolated request flow</h1>
+    <p class="subtitle">Every interaction follows a single, validated path. The browser never holds secrets or talks to the AI directly — the Navio backend is the sole, hardened gateway between users and Azure OpenAI.</p>
+    <div class="slide-body">
+      <svg viewBox="0 0 1180 300" width="100%" style="max-height:300px">
+        <defs>
+          <marker id="ar" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#95c11e"/></marker>
+          <linearGradient id="gnavy" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#16263d"/><stop offset="1" stop-color="#0f1b2d"/></linearGradient>
+        </defs>
+        <!-- nodes -->
+        <g font-family="Inter" text-anchor="middle">
+          <!-- user -->
+          <rect x="20" y="100" width="170" height="100" rx="14" fill="#f5f8fb" stroke="#e4e9ef" stroke-width="1.5"/>
+          <circle cx="105" cy="138" r="15" fill="#eef6d8"/><circle cx="105" cy="133" r="5.5" fill="#7da015"/><path d="M95 148c0-6 20-6 20 0" stroke="#7da015" stroke-width="3" fill="none" stroke-linecap="round"/>
+          <text x="105" y="178" font-size="15" font-weight="700" fill="#0f1b2d">User</text>
+          <text x="105" y="194" font-size="11" fill="#5b6b7e">Visitor browser</text>
+          <!-- website -->
+          <rect x="255" y="100" width="170" height="100" rx="14" fill="#f5f8fb" stroke="#e4e9ef" stroke-width="1.5"/>
+          <rect x="320" y="123" width="40" height="30" rx="4" fill="none" stroke="#ec6607" stroke-width="2.5"/><line x1="320" y1="132" x2="360" y2="132" stroke="#ec6607" stroke-width="2.5"/>
+          <text x="340" y="178" font-size="15" font-weight="700" fill="#0f1b2d">Website</text>
+          <text x="340" y="194" font-size="11" fill="#5b6b7e">sportnavi.de widget</text>
+          <!-- backend -->
+          <rect x="490" y="80" width="200" height="140" rx="14" fill="url(#gnavy)"/>
+          <path d="M590 108L612 118V134C612 148 602 158 590 162C578 158 568 148 568 134V118L590 108Z" fill="none" stroke="#95c11e" stroke-width="2.5" stroke-linejoin="round"/>
+          <path d="M582 134l5 5 11-12" stroke="#95c11e" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          <text x="590" y="186" font-size="15" font-weight="700" fill="#fff">Navio Backend</text>
+          <text x="590" y="203" font-size="11" fill="#9fb4cc">FastAPI · the only gateway</text>
+          <!-- azure -->
+          <rect x="755" y="100" width="190" height="100" rx="14" fill="#eef0ff" stroke="#d4ddfb" stroke-width="1.5"/>
+          <path d="M838 122l-18 38h10l14-30 8 18h-9l-4 8h22z" fill="#2a6df4"/>
+          <text x="850" y="178" font-size="15" font-weight="700" fill="#0f1b2d">Azure OpenAI</text>
+          <text x="850" y="194" font-size="11" fill="#5b6b7e">GPT-4.1 deployment</text>
+          <!-- response -->
+          <rect x="1010" y="100" width="150" height="100" rx="14" fill="#eef6d8" stroke="#d6e6a8" stroke-width="1.5"/>
+          <path d="M1070 128h45v26h-30l-9 9z" fill="none" stroke="#7da015" stroke-width="2.5" stroke-linejoin="round"/>
+          <text x="1085" y="178" font-size="15" font-weight="700" fill="#0f1b2d">Response</text>
+          <text x="1085" y="194" font-size="11" fill="#5b6b7e">Grounded answer</text>
+          <!-- arrows -->
+          <line x1="192" y1="150" x2="250" y2="150" stroke="#95c11e" stroke-width="3" marker-end="url(#ar)"/>
+          <line x1="427" y1="150" x2="485" y2="150" stroke="#95c11e" stroke-width="3" marker-end="url(#ar)"/>
+          <line x1="692" y1="150" x2="750" y2="150" stroke="#95c11e" stroke-width="3" marker-end="url(#ar)"/>
+          <line x1="947" y1="150" x2="1005" y2="150" stroke="#95c11e" stroke-width="3" marker-end="url(#ar)"/>
+          <text x="221" y="142" class="flow-cap">HTTPS</text>
+          <text x="456" y="142" class="flow-cap">Validated</text>
+          <text x="721" y="142" class="flow-cap">Server-side</text>
+          <text x="976" y="142" class="flow-cap">TLS</text>
+        </g>
+      </svg>
+      <div class="grid g3" style="margin-top:26px">
+        <div class="card tinted"><h3><span class="ico">🔒</span> Secure communication</h3><p>End-to-end TLS on every hop. Credentials and the system prompt live only on the server — never shipped to the browser.</p></div>
+        <div class="card tinted"><h3><span class="ico o">➡️</span> Controlled request flow</h3><p>One sanctioned path: validate → authorize → call Azure → return. No client ever reaches the model directly.</p></div>
+        <div class="card tinted"><h3><span class="ico b">🧩</span> Component isolation</h3><p>Frontend, backend, and AI provider are cleanly separated, so a fault or attack in one tier cannot compromise the others.</p></div>
+      </div>
+    </div>
+    <div class="footer"><span class="brand-min"><b>NAVIO</b> · System Overview</span><span class="conf">● CONFIDENTIAL</span></div>
+  </section>
+
+  <!-- ============ SLIDE 3 — SECURITY ARCHITECTURE (ORIGIN) ============ -->
+  <section class="slide">
+    <span class="eyebrow"><span class="dot"></span> Security Architecture</span>
+    <h1 class="slide-title">Origin restriction — <span class="accent">the first gate</span></h1>
+    <p class="subtitle">Before any logic runs, the backend verifies <b>where</b> the request came from. Only the official SportNavi domains are permitted to embed and call Navio.</p>
+    <div class="slide-body">
+      <div class="grid g2" style="grid-template-columns:1.15fr .85fr;align-items:center">
+        <svg viewBox="0 0 620 320" width="100%" style="max-height:320px">
+          <defs><marker id="ar2" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#5b6b7e"/></marker></defs>
+          <!-- allowed -->
+          <g font-family="Inter">
+            <rect x="10" y="20" width="200" height="58" rx="11" fill="#eef6d8" stroke="#95c11e" stroke-width="2"/>
+            <text x="28" y="46" font-size="14" font-weight="700" fill="#0f1b2d">✓ sportnavi.de</text>
+            <text x="28" y="66" font-size="12" fill="#5b6b7e">Allowed origin</text>
+            <rect x="10" y="92" width="200" height="58" rx="11" fill="#eef6d8" stroke="#95c11e" stroke-width="2"/>
+            <text x="28" y="118" font-size="14" font-weight="700" fill="#0f1b2d">✓ www.sportnavi.de</text>
+            <text x="28" y="138" font-size="12" fill="#5b6b7e">Allowed origin</text>
+            <!-- blocked -->
+            <rect x="10" y="186" width="200" height="58" rx="11" fill="#fdebdd" stroke="#ec6607" stroke-width="2" stroke-dasharray="5 4"/>
+            <text x="28" y="212" font-size="14" font-weight="700" fill="#c9560a">✕ unknown-site.com</text>
+            <text x="28" y="232" font-size="12" fill="#b05a18">Rejected</text>
+            <rect x="10" y="258" width="200" height="50" rx="11" fill="#fdebdd" stroke="#ec6607" stroke-width="2" stroke-dasharray="5 4"/>
+            <text x="28" y="288" font-size="14" font-weight="700" fill="#c9560a">✕ iframe-clone.io</text>
+            <!-- gate -->
+            <line x1="212" y1="49" x2="300" y2="120" stroke="#95c11e" stroke-width="2.5" marker-end="url(#ar2)"/>
+            <line x1="212" y1="121" x2="300" y2="135" stroke="#95c11e" stroke-width="2.5" marker-end="url(#ar2)"/>
+            <line x1="212" y1="215" x2="300" y2="160" stroke="#ec6607" stroke-width="2.5" stroke-dasharray="5 4"/>
+            <line x1="212" y1="283" x2="300" y2="175" stroke="#ec6607" stroke-width="2.5" stroke-dasharray="5 4"/>
+            <!-- shield gate -->
+            <path d="M360 70L420 92V150C420 200 392 232 360 246C328 232 300 200 300 150V92L360 70Z" fill="#0f1b2d"/>
+            <path d="M345 152l11 11 24-27" stroke="#95c11e" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            <text x="360" y="278" font-size="13" font-weight="700" fill="#0f1b2d" text-anchor="middle">CORS Origin Check</text>
+            <!-- pass -->
+            <line x1="422" y1="158" x2="500" y2="158" stroke="#95c11e" stroke-width="3" marker-end="url(#ar2)"/>
+            <rect x="505" y="128" width="105" height="62" rx="11" fill="#0f1b2d"/>
+            <text x="557" y="155" font-size="13" font-weight="700" fill="#fff" text-anchor="middle">Backend</text>
+            <text x="557" y="174" font-size="11" fill="#9fb4cc" text-anchor="middle">logic runs</text>
+          </g>
+        </svg>
+        <div>
+          <div class="config" style="margin-bottom:18px">
+<span class="cm"># Backend allow-list (enforced server-side)</span><br>
+<span class="k">ALLOWED_ORIGINS</span> = <span class="v">"https://sportnavi.de,</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="v">https://www.sportnavi.de"</span>
+          </div>
+          <ul class="clean">
+            <li><span class="b">✓</span><span><b>Browser origin validation</b> — CORS policy rejects requests from any domain not on the list.</span></li>
+            <li><span class="b o">✕</span><span><b>Prevents unauthorized embedding</b> — third-party sites cannot clone or hijack the widget.</span></li>
+            <li><span class="b">✓</span><span><b>Reduced abuse surface</b> — scrapers and bots calling from foreign origins are stopped at the door.</span></li>
+            <li><span class="b o">✕</span><span><b>Domain-level protection</b> — the AI is reachable only through SportNavi's own properties.</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="footer"><span class="brand-min"><b>NAVIO</b> · Security Architecture · Layer 1</span><span class="conf">● CONFIDENTIAL</span></div>
+  </section>
+
+  <!-- ============ SLIDE 4 — RATE LIMITING ============ -->
+  <section class="slide">
+    <span class="eyebrow"><span class="dot"></span> Abuse Prevention</span>
+    <h1 class="slide-title">Rate limiting — <span class="accent">fair usage, by design</span></h1>
+    <p class="subtitle">Per-visitor quotas cap how fast and how often anyone can use Navio, neutralizing automated abuse while keeping the service responsive and costs predictable.</p>
+    <div class="slide-body">
+      <div class="grid g2" style="grid-template-columns:.9fr 1.1fr;align-items:center">
+        <div>
+          <div class="grid g2" style="margin-bottom:18px">
+            <div class="card"><div class="kpi">15<span class="u">/min</span></div><div class="kpi-l">Per-minute ceiling</div><p style="margin-top:8px">Blocks rapid-fire scripted bursts before they impact the service.</p></div>
+            <div class="card"><div class="kpi" style="color:var(--orange)">300<span class="u">/day</span></div><div class="kpi-l" style="color:var(--orange)">Daily ceiling</div><p style="margin-top:8px">Caps sustained abuse and keeps daily AI spend bounded.</p></div>
+          </div>
+          <div class="config">
+<span class="cm"># Per-client quotas (IP-scoped, sliding window)</span><br>
+<span class="k">RATE_LIMIT_PER_MIN</span> = <span class="v">15</span><br>
+<span class="k">RATE_LIMIT_PER_DAY</span> = <span class="v">300</span>
+          </div>
+        </div>
+        <div>
+          <div class="card" style="margin-bottom:16px">
+            <h3 style="margin-bottom:14px">Request rate over a burst attack</h3>
+            <svg viewBox="0 0 520 200" width="100%">
+              <line x1="40" y1="170" x2="500" y2="170" stroke="#e4e9ef" stroke-width="2"/>
+              <line x1="40" y1="20" x2="40" y2="170" stroke="#e4e9ef" stroke-width="2"/>
+              <!-- limit line -->
+              <line x1="40" y1="70" x2="500" y2="70" stroke="#ec6607" stroke-width="2" stroke-dasharray="6 5"/>
+              <text x="500" y="64" font-size="11" fill="#ec6607" font-weight="700" text-anchor="end">Limit = 15/min</text>
+              <!-- attempted (red dashed) -->
+              <path d="M40 165 L120 120 L200 60 L280 30 L360 25 L440 22 L500 22" fill="none" stroke="#dc3545" stroke-width="2.5" stroke-dasharray="5 4"/>
+              <text x="300" y="20" font-size="11" fill="#dc3545" font-weight="700">Attempted (bot)</text>
+              <!-- allowed (green, capped) -->
+              <path d="M40 165 L120 120 L200 70 L280 70 L360 70 L440 70 L500 70" fill="none" stroke="#7da015" stroke-width="3"/>
+              <text x="300" y="88" font-size="11" fill="#7da015" font-weight="700">Allowed (served)</text>
+              <text x="270" y="192" font-size="11" fill="#5b6b7e" text-anchor="middle">Time →</text>
+            </svg>
+          </div>
+          <div class="grid g2">
+            <div class="chip"><span class="chk">✓</span> Spam &amp; flood protection</div>
+            <div class="chip"><span class="chk">✓</span> Automated abuse blocked</div>
+            <div class="chip"><span class="chk">✓</span> Cost control</div>
+            <div class="chip"><span class="chk">✓</span> Service stability</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="footer"><span class="brand-min"><b>NAVIO</b> · Abuse Prevention · Layer 2</span><span class="conf">● CONFIDENTIAL</span></div>
+  </section>
+
+  <!-- ============ SLIDE 5 — INPUT PROTECTION ============ -->
+  <section class="slide">
+    <span class="eyebrow"><span class="dot"></span> Input Protection</span>
+    <h1 class="slide-title">Bounded input — <span class="accent">a security control</span></h1>
+    <p class="subtitle">A hard cap on message size keeps payloads predictable. Input limits are not a UX nicety — they are a deliberate defense against resource exhaustion and abuse.</p>
+    <div class="slide-body">
+      <div class="grid g2" style="grid-template-columns:.85fr 1.15fr;align-items:center">
+        <div>
+          <div class="card" style="text-align:center;padding:30px 22px">
+            <div class="kpi" style="font-size:64px">2,000</div>
+            <div class="kpi-l">Maximum characters per message</div>
+            <svg viewBox="0 0 280 40" width="80%" style="margin:20px auto 0">
+              <rect x="0" y="10" width="280" height="20" rx="10" fill="#eef3f8"/>
+              <rect x="0" y="10" width="190" height="20" rx="10" fill="#95c11e"/>
+              <line x1="280" y1="4" x2="280" y2="36" stroke="#ec6607" stroke-width="3"/>
+            </svg>
+            <p style="margin-top:12px">Validated at the API boundary — oversized requests are rejected before any processing.</p>
+          </div>
+          <div class="config" style="margin-top:16px">
+<span class="k">MAX_MESSAGE_CHARS</span> = <span class="v">2000</span> &nbsp;<span class="cm"># rejected if exceeded</span>
+          </div>
+        </div>
+        <div class="grid g2">
+          <div class="card"><h3><span class="ico o">🛡️</span> No oversized payloads</h3><p>Megabyte-scale junk requests can't reach the model or the database — they're refused at validation.</p></div>
+          <div class="card"><h3><span class="ico b">📊</span> Predictable resource use</h3><p>Bounded inputs mean bounded memory, tokens, and latency per request — capacity planning stays accurate.</p></div>
+          <div class="card"><h3><span class="ico">🎯</span> Reduced attack surface</h3><p>Caps blunt payload-stuffing and prompt-bloat attempts aimed at exhausting AI token budgets.</p></div>
+          <div class="card"><h3><span class="ico b">⚙️</span> Improved reliability</h3><p>Consistent request sizes keep the service stable under load and simplify failure handling.</p></div>
+        </div>
+      </div>
+    </div>
+    <div class="footer"><span class="brand-min"><b>NAVIO</b> · Input Protection · Layer 5</span><span class="conf">● CONFIDENTIAL</span></div>
+  </section>
+
+  <!-- ============ SLIDE 6 — CONVERSATION MEMORY ============ -->
+  <section class="slide">
+    <span class="eyebrow"><span class="dot"></span> Conversation Memory</span>
+    <h1 class="slide-title">A <span class="accent">bounded, short-lived</span> memory window</h1>
+    <p class="subtitle">Navio remembers only the last 10 turns. Context is intentionally limited — a privacy-conscious choice that also controls cost and performance.</p>
+    <div class="slide-body">
+      <svg viewBox="0 0 1180 150" width="100%" style="max-height:150px;margin-bottom:8px">
+        <g font-family="Inter">
+          <!-- sliding window -->
+          <rect x="20" y="40" width="120" height="60" rx="10" fill="#f5f8fb" stroke="#e4e9ef" opacity=".5"/>
+          <text x="80" y="76" font-size="12" fill="#9fb4cc" text-anchor="middle">turn 1…</text>
+          <text x="80" y="120" font-size="11" fill="#c9560a" text-anchor="middle">↓ dropped</text>
+          <!-- window of 10 -->
+          <rect x="160" y="30" width="780" height="80" rx="14" fill="#eef6d8" stroke="#95c11e" stroke-width="2"/>
+          <text x="550" y="22" font-size="12" fill="#7da015" font-weight="700" text-anchor="middle">Active context window · last 10 turns</text>
+          <g>
+            <rect x="178" y="48" width="68" height="44" rx="8" fill="#fff" stroke="#d6e6a8"/><text x="212" y="74" font-size="11" fill="#0f1b2d" text-anchor="middle">t-9</text>
+            <rect x="254" y="48" width="68" height="44" rx="8" fill="#fff" stroke="#d6e6a8"/><text x="288" y="74" font-size="11" fill="#0f1b2d" text-anchor="middle">t-8</text>
+            <rect x="330" y="48" width="68" height="44" rx="8" fill="#fff" stroke="#d6e6a8"/><text x="364" y="74" font-size="11" fill="#0f1b2d" text-anchor="middle">t-7</text>
+            <rect x="406" y="48" width="68" height="44" rx="8" fill="#fff" stroke="#d6e6a8"/><text x="440" y="74" font-size="11" fill="#0f1b2d" text-anchor="middle">…</text>
+            <rect x="482" y="48" width="68" height="44" rx="8" fill="#fff" stroke="#d6e6a8"/><text x="516" y="74" font-size="11" fill="#0f1b2d" text-anchor="middle">t-3</text>
+            <rect x="558" y="48" width="68" height="44" rx="8" fill="#fff" stroke="#d6e6a8"/><text x="592" y="74" font-size="11" fill="#0f1b2d" text-anchor="middle">t-2</text>
+            <rect x="634" y="48" width="68" height="44" rx="8" fill="#fff" stroke="#d6e6a8"/><text x="668" y="74" font-size="11" fill="#0f1b2d" text-anchor="middle">t-1</text>
+            <rect x="710" y="48" width="100" height="44" rx="8" fill="#0f1b2d"/><text x="760" y="74" font-size="11" fill="#fff" text-anchor="middle">current</text>
+          </g>
+          <!-- arrow new turn pushes oldest out -->
+          <path d="M960 70 L1010 70" stroke="#ec6607" stroke-width="3" marker-end="url(#ar)"/>
+          <rect x="1015" y="48" width="145" height="44" rx="10" fill="#fdebdd" stroke="#ec6607"/><text x="1087" y="74" font-size="12" fill="#c9560a" text-anchor="middle" font-weight="700">new turn in</text>
+        </g>
+      </svg>
+      <div class="grid g4" style="margin-top:14px">
+        <div class="card tinted"><h3 style="font-size:14px"><span class="ico">🔐</span> Privacy-conscious</h3><p>Less conversation data is held in context, narrowing what's ever processed at once.</p></div>
+        <div class="card tinted"><h3 style="font-size:14px"><span class="ico b">📐</span> Controlled context</h3><p>A fixed window keeps prompt size and behavior consistent over long chats.</p></div>
+        <div class="card tinted"><h3 style="font-size:14px"><span class="ico o">💶</span> Cost management</h3><p>Bounded history caps the tokens billed on every single request.</p></div>
+        <div class="card tinted"><h3 style="font-size:14px"><span class="ico b">⚡</span> Performance</h3><p>Shorter context means faster responses and lower memory pressure.</p></div>
+      </div>
+      <div class="config" style="margin-top:16px">
+<span class="k">MAX_HISTORY_TURNS</span> = <span class="v">10</span> &nbsp;<span class="cm"># oldest turns drop off → reduced data retention</span>
+      </div>
+    </div>
+    <div class="footer"><span class="brand-min"><b>NAVIO</b> · Conversation Memory Controls</span><span class="conf">● CONFIDENTIAL</span></div>
+  </section>
+
+  <!-- ============ SLIDE 7 — AI RESPONSE GOVERNANCE ============ -->
+  <section class="slide">
+    <span class="eyebrow"><span class="dot"></span> AI Response Governance</span>
+    <h1 class="slide-title">Governed generation — <span class="accent">predictable by parameter</span></h1>
+    <p class="subtitle">Output length and creativity are tuned for a focused, reliable assistant. These parameters reduce hallucination risk and make behavior — and cost — consistent.</p>
+    <div class="slide-body">
+      <div class="grid g2" style="grid-template-columns:.8fr 1.2fr;align-items:center">
+        <div>
+          <div class="card" style="margin-bottom:16px"><div class="kpi">800<span class="u">tokens</span></div><div class="kpi-l">Max response length</div><p style="margin-top:8px">Concise answers — capped cost and latency on every call.</p></div>
+          <div class="card"><div class="kpi" style="color:var(--orange)">0.4<span class="u">temp</span></div><div class="kpi-l" style="color:var(--orange)">Sampling temperature</div><p style="margin-top:8px">Low-variance, focused output instead of free-wheeling creativity.</p></div>
+        </div>
+        <div>
+          <div class="card" style="margin-bottom:16px">
+            <h3 style="margin-bottom:14px">Temperature → output variance</h3>
+            <svg viewBox="0 0 520 150" width="100%">
+              <line x1="20" y1="120" x2="500" y2="120" stroke="#e4e9ef" stroke-width="2"/>
+              <!-- navio marker at 0.4 -->
+              <rect x="20" y="40" width="190" height="60" rx="10" fill="#eef6d8" stroke="#95c11e" stroke-width="2"/>
+              <text x="115" y="66" font-size="13" font-weight="700" fill="#0f1b2d" text-anchor="middle">Navio · 0.4</text>
+              <text x="115" y="86" font-size="11" fill="#5b6b7e" text-anchor="middle">focused · consistent</text>
+              <rect x="310" y="40" width="190" height="60" rx="10" fill="#fdebdd" stroke="#ec6607" stroke-width="2" stroke-dasharray="5 4"/>
+              <text x="405" y="66" font-size="13" font-weight="700" fill="#c9560a" text-anchor="middle">High temp · 1.0+</text>
+              <text x="405" y="86" font-size="11" fill="#b05a18" text-anchor="middle">creative · less predictable</text>
+              <text x="20" y="138" font-size="11" fill="#5b6b7e">deterministic</text>
+              <text x="500" y="138" font-size="11" fill="#5b6b7e" text-anchor="end">divergent</text>
+            </svg>
+          </div>
+          <div class="grid g2">
+            <div class="chip"><span class="chk">✓</span> Controlled generation</div>
+            <div class="chip"><span class="chk">✓</span> Reduced hallucination risk</div>
+            <div class="chip"><span class="chk">✓</span> Consistent UX</div>
+            <div class="chip"><span class="chk">✓</span> Operational cost control</div>
+          </div>
+        </div>
+      </div>
+      <div class="config" style="margin-top:16px">
+<span class="k">MAX_TOKENS</span> = <span class="v">800</span> &nbsp;&nbsp; <span class="k">TEMPERATURE</span> = <span class="v">0.4</span>
+      </div>
+    </div>
+    <div class="footer"><span class="brand-min"><b>NAVIO</b> · AI Response Governance · Layer 6</span><span class="conf">● CONFIDENTIAL</span></div>
+  </section>
+
+  <!-- ============ SLIDE 8 — BOT PROTECTION ============ -->
+  <section class="slide">
+    <span class="eyebrow"><span class="dot"></span> Bot Protection</span>
+    <h1 class="slide-title">Cloudflare Turnstile — <span class="accent">proving a human</span></h1>
+    <p class="subtitle">Before a session is issued, the visitor is verified as a real browser. Turnstile mitigates automated attacks without friction-heavy CAPTCHAs.</p>
+    <div class="slide-body">
+      <div class="grid g2" style="align-items:stretch">
+        <div class="card" style="border-color:#f3c6c6;background:#fdf4f4">
+          <div class="pill o" style="background:#fbe3e3;color:#c0392b">BEFORE · no bot gate</div>
+          <svg viewBox="0 0 480 170" width="100%" style="margin-top:14px">
+            <g font-family="Inter">
+              <rect x="10" y="20" width="90" height="36" rx="8" fill="#fff" stroke="#dc3545"/><text x="55" y="43" font-size="11" fill="#c0392b" text-anchor="middle">🤖 bot</text>
+              <rect x="10" y="66" width="90" height="36" rx="8" fill="#fff" stroke="#dc3545"/><text x="55" y="89" font-size="11" fill="#c0392b" text-anchor="middle">🤖 bot</text>
+              <rect x="10" y="112" width="90" height="36" rx="8" fill="#fff" stroke="#dc3545"/><text x="55" y="135" font-size="11" fill="#c0392b" text-anchor="middle">🤖 bot</text>
+              <path d="M105 38 L230 80" stroke="#dc3545" stroke-width="2.5"/><path d="M105 84 L230 84" stroke="#dc3545" stroke-width="2.5"/><path d="M105 130 L230 88" stroke="#dc3545" stroke-width="2.5"/>
+              <rect x="235" y="56" width="120" height="56" rx="10" fill="#0f1b2d"/><text x="295" y="89" font-size="12" fill="#fff" text-anchor="middle">Backend</text>
+              <text x="420" y="88" font-size="13" font-weight="700" fill="#c0392b" text-anchor="middle">flooded</text>
+            </g>
+          </svg>
+          <p style="margin-top:8px;color:#9b3b3b">Scripts and headless browsers hit endpoints freely — spam, scraping, and cost-draining traffic get through.</p>
+        </div>
+        <div class="card" style="border-color:#d6e6a8;background:#f7fbec">
+          <div class="pill">AFTER · Turnstile enabled</div>
+          <svg viewBox="0 0 480 170" width="100%" style="margin-top:14px">
+            <g font-family="Inter">
+              <rect x="10" y="20" width="90" height="36" rx="8" fill="#fff" stroke="#dc3545"/><text x="55" y="43" font-size="11" fill="#c0392b" text-anchor="middle">🤖 bot</text>
+              <rect x="10" y="66" width="90" height="36" rx="8" fill="#fff" stroke="#7da015"/><text x="55" y="89" font-size="11" fill="#7da015" text-anchor="middle">👤 human</text>
+              <rect x="10" y="112" width="90" height="36" rx="8" fill="#fff" stroke="#dc3545"/><text x="55" y="135" font-size="11" fill="#c0392b" text-anchor="middle">🤖 bot</text>
+              <!-- turnstile gate -->
+              <rect x="150" y="44" width="80" height="80" rx="12" fill="#fff7ef" stroke="#ec6607" stroke-width="2"/>
+              <text x="190" y="78" font-size="11" fill="#c9560a" text-anchor="middle" font-weight="700">Turn-</text>
+              <text x="190" y="93" font-size="11" fill="#c9560a" text-anchor="middle" font-weight="700">stile</text>
+              <path d="M105 38 L148 70" stroke="#dc3545" stroke-width="2.5" stroke-dasharray="4 4"/>
+              <path d="M105 84 L148 84" stroke="#7da015" stroke-width="2.5"/>
+              <path d="M105 130 L148 98" stroke="#dc3545" stroke-width="2.5" stroke-dasharray="4 4"/>
+              <text x="125" y="35" font-size="10" fill="#dc3545">✕</text>
+              <path d="M232 84 L320 84" stroke="#7da015" stroke-width="3" marker-end="url(#ar)"/>
+              <rect x="325" y="56" width="120" height="56" rx="10" fill="#0f1b2d"/><text x="385" y="83" font-size="12" fill="#fff" text-anchor="middle">Session</text><text x="385" y="99" font-size="11" fill="#95c11e" text-anchor="middle">issued</text>
+            </g>
+          </svg>
+          <p style="margin-top:8px;color:#5b7a16">Only verified humans receive a session token. Automated traffic is filtered before it ever reaches the AI.</p>
+        </div>
+      </div>
+      <div class="grid g4" style="margin-top:18px">
+        <div class="chip"><span class="chk">✓</span> Human verification</div>
+        <div class="chip"><span class="chk">✓</span> Bot mitigation</div>
+        <div class="chip"><span class="chk">✓</span> Automated-attack prevention</div>
+        <div class="chip"><span class="chk">✓</span> Abuse protection</div>
+      </div>
+    </div>
+    <div class="footer"><span class="brand-min"><b>NAVIO</b> · Bot Protection · Layer 3</span><span class="conf">● CONFIDENTIAL</span></div>
+  </section>
+
+  <!-- ============ SLIDE 9 — SESSION SECURITY ============ -->
+  <section class="slide">
+    <span class="eyebrow"><span class="dot"></span> Session Security</span>
+    <h1 class="slide-title">Signed, expiring <span class="accent">visitor sessions</span></h1>
+    <p class="subtitle">Verified visitors receive a cryptographically signed session token with a short lifetime. Integrity is server-validated on every request — and the secret never leaves the server.</p>
+    <div class="slide-body">
+      <div class="grid g2" style="grid-template-columns:1.1fr .9fr;align-items:center">
+        <svg viewBox="0 0 600 290" width="100%" style="max-height:290px">
+          <g font-family="Inter">
+            <!-- step 1 -->
+            <rect x="10" y="20" width="150" height="64" rx="11" fill="#eef6d8" stroke="#95c11e" stroke-width="1.5"/>
+            <text x="85" y="46" font-size="13" font-weight="700" fill="#0f1b2d" text-anchor="middle">Human verified</text>
+            <text x="85" y="66" font-size="11" fill="#5b6b7e" text-anchor="middle">via Turnstile</text>
+            <path d="M162 52 L210 52" stroke="#95c11e" stroke-width="3" marker-end="url(#ar)"/>
+            <!-- step 2 sign -->
+            <rect x="215" y="14" width="170" height="76" rx="11" fill="#0f1b2d"/>
+            <text x="300" y="40" font-size="13" font-weight="700" fill="#fff" text-anchor="middle">Token signed</text>
+            <text x="300" y="59" font-size="10.5" fill="#9fb4cc" text-anchor="middle">HMAC-SHA256 with</text>
+            <text x="300" y="74" font-size="10.5" fill="#95c11e" text-anchor="middle">&lt;SESSION_SECRET&gt;</text>
+            <path d="M387 52 L435 52" stroke="#95c11e" stroke-width="3" marker-end="url(#ar)"/>
+            <!-- step 3 issued -->
+            <rect x="440" y="20" width="150" height="64" rx="11" fill="#f5f8fb" stroke="#e4e9ef"/>
+            <text x="515" y="46" font-size="13" font-weight="700" fill="#0f1b2d" text-anchor="middle">Issued to client</text>
+            <text x="515" y="66" font-size="11" fill="#5b6b7e" text-anchor="middle">opaque token</text>
+            <!-- ttl -->
+            <rect x="215" y="120" width="170" height="64" rx="11" fill="#fdebdd" stroke="#ec6607" stroke-width="1.5"/>
+            <circle cx="248" cy="152" r="15" fill="none" stroke="#ec6607" stroke-width="2.5"/><path d="M248 144v8l5 4" stroke="#ec6607" stroke-width="2.5" stroke-linecap="round"/>
+            <text x="320" y="148" font-size="13" font-weight="700" fill="#c9560a" text-anchor="middle">Expires in 30 min</text>
+            <text x="320" y="167" font-size="11" fill="#b05a18" text-anchor="middle">SESSION_TTL_MIN = 30</text>
+            <path d="M300 92 L300 118" stroke="#ec6607" stroke-width="2.5" marker-end="url(#ar)"/>
+            <!-- validate each request -->
+            <rect x="120" y="220" width="360" height="60" rx="11" fill="#eef6d8" stroke="#95c11e" stroke-width="1.5"/>
+            <path d="M150 250L168 257V250C168 248 160 245 150 245Z" fill="#7da015"/>
+            <text x="300" y="245" font-size="13" font-weight="700" fill="#0f1b2d" text-anchor="middle">Every request: signature + expiry re-validated</text>
+            <text x="300" y="265" font-size="11" fill="#5b6b7e" text-anchor="middle">tampered or expired token → rejected</text>
+            <path d="M300 186 L300 218" stroke="#95c11e" stroke-width="2.5" marker-end="url(#ar)"/>
+          </g>
+        </svg>
+        <div>
+          <div class="config" style="margin-bottom:18px">
+<span class="cm"># Secrets stay server-side — never in the browser</span><br>
+<span class="k">SESSION_SECRET</span> = <span class="red">&lt;SECRET&gt;</span> <span class="cm"># [REDACTED]</span><br>
+<span class="k">SESSION_TTL_MIN</span> = <span class="v">30</span>
+          </div>
+          <ul class="clean">
+            <li><span class="b">✓</span><span><b>Session integrity</b> — HMAC signing makes tokens tamper-evident.</span></li>
+            <li><span class="b">✓</span><span><b>Visitor trust validation</b> — only Turnstile-verified visitors get a token.</span></li>
+            <li><span class="b o">⏱</span><span><b>Session expiration</b> — a 30-minute TTL limits the window of validity.</span></li>
+            <li><span class="b">✓</span><span><b>Reduced hijacking risk</b> — short-lived, signed tokens shrink the attack window.</span></li>
+            <li><span class="b o">↻</span><span><b>Secure visitor lifecycle</b> — expired sessions re-verify cleanly.</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="footer"><span class="brand-min"><b>NAVIO</b> · Session Security · Layer 4</span><span class="conf">● CONFIDENTIAL</span></div>
+  </section>
+
+  <!-- ============ SLIDE 10 — DISTRIBUTED RATE LIMITING / REDIS ============ -->
+  <section class="slide">
+    <span class="eyebrow"><span class="dot"></span> Distributed Architecture</span>
+    <h1 class="slide-title">Shared quotas across <span class="accent">every instance</span></h1>
+    <p class="subtitle">When scaled horizontally, all application instances enforce rate limits against a single shared Redis store — so quotas hold no matter which worker handles a request.</p>
+    <div class="slide-body">
+      <svg viewBox="0 0 1180 280" width="100%" style="max-height:280px">
+        <g font-family="Inter" text-anchor="middle">
+          <!-- users -->
+          <rect x="20" y="100" width="150" height="80" rx="12" fill="#f5f8fb" stroke="#e4e9ef"/>
+          <text x="95" y="135" font-size="22">👥</text>
+          <text x="95" y="160" font-size="13" font-weight="700" fill="#0f1b2d">Users</text>
+          <!-- app instances -->
+          <rect x="270" y="30" width="180" height="62" rx="11" fill="#0f1b2d"/><text x="360" y="60" font-size="13" font-weight="700" fill="#fff">Instance A</text><text x="360" y="78" font-size="10" fill="#9fb4cc">worker pool</text>
+          <rect x="270" y="110" width="180" height="62" rx="11" fill="#0f1b2d"/><text x="360" y="140" font-size="13" font-weight="700" fill="#fff">Instance B</text><text x="360" y="158" font-size="10" fill="#9fb4cc">worker pool</text>
+          <rect x="270" y="190" width="180" height="62" rx="11" fill="#0f1b2d"/><text x="360" y="220" font-size="13" font-weight="700" fill="#fff">Instance C</text><text x="360" y="238" font-size="10" fill="#9fb4cc">worker pool</text>
+          <!-- redis -->
+          <rect x="560" y="90" width="180" height="100" rx="14" fill="#fdebdd" stroke="#ec6607" stroke-width="2"/>
+          <text x="650" y="128" font-size="26">⚡</text>
+          <text x="650" y="155" font-size="14" font-weight="800" fill="#c9560a">Redis</text>
+          <text x="650" y="174" font-size="10.5" fill="#b05a18">shared quota counters</text>
+          <!-- azure -->
+          <rect x="850" y="90" width="190" height="100" rx="14" fill="#eef0ff" stroke="#d4ddfb" stroke-width="2"/>
+          <path d="M933 116l-18 38h10l14-30 8 18h-9l-4 8h22z" fill="#2a6df4"/>
+          <text x="945" y="168" font-size="14" font-weight="800" fill="#0f1b2d">Azure AI</text>
+          <text x="945" y="185" font-size="10.5" fill="#5b6b7e">GPT-4.1</text>
+          <!-- arrows -->
+          <path d="M172 140 L265 60" stroke="#95c11e" stroke-width="2.5" marker-end="url(#ar)"/>
+          <path d="M172 140 L265 140" stroke="#95c11e" stroke-width="2.5" marker-end="url(#ar)"/>
+          <path d="M172 140 L265 220" stroke="#95c11e" stroke-width="2.5" marker-end="url(#ar)"/>
+          <path d="M452 60 L556 120" stroke="#ec6607" stroke-width="2.5" marker-end="url(#ar)"/>
+          <path d="M452 140 L556 140" stroke="#ec6607" stroke-width="2.5" marker-end="url(#ar)"/>
+          <path d="M452 220 L556 160" stroke="#ec6607" stroke-width="2.5" marker-end="url(#ar)"/>
+          <path d="M742 140 L846 140" stroke="#2a6df4" stroke-width="2.5" marker-end="url(#ar)"/>
+          <text x="505" y="95" class="flow-cap">check quota</text>
+          <text x="794" y="130" class="flow-cap">if allowed</text>
+        </g>
+      </svg>
+      <div class="grid g4" style="margin-top:14px">
+        <div class="card tinted"><h3 style="font-size:14px"><span class="ico o">⚡</span> Shared rate limiting</h3><p>One source of truth for counters — no per-instance blind spots.</p></div>
+        <div class="card tinted"><h3 style="font-size:14px"><span class="ico b">🔁</span> Multi-worker consistency</h3><p>Quotas hold across all workers and instances simultaneously.</p></div>
+        <div class="card tinted"><h3 style="font-size:14px"><span class="ico">📈</span> Horizontal scalability</h3><p>Add instances freely; limits remain correct and global.</p></div>
+        <div class="card tinted"><h3 style="font-size:14px"><span class="ico b">✅</span> Reliable enforcement</h3><p>Atomic counters make quota decisions deterministic under load.</p></div>
+      </div>
+      <p class="lead" style="margin-top:14px;font-size:13px;color:var(--muted)"><b>Note:</b> Navio runs in-memory limiting by default for single-instance simplicity and switches to Redis automatically when a distributed deployment is configured.</p>
+    </div>
+    <div class="footer"><span class="brand-min"><b>NAVIO</b> · Distributed Rate Limiting</span><span class="conf">● CONFIDENTIAL</span></div>
+  </section>
+
+  <!-- ============ SLIDE 11 — AZURE AI ARCHITECTURE ============ -->
+  <section class="slide">
+    <span class="eyebrow"><span class="dot"></span> Azure AI Architecture</span>
+    <h1 class="slide-title">Built on <span class="accent">enterprise-grade</span> Azure OpenAI</h1>
+    <p class="subtitle">Navio's intelligence runs on a managed Azure OpenAI deployment — GPT-4.1 inside an Azure AI Project — inheriting the availability, scalability, and security controls of Microsoft's enterprise cloud.</p>
+    <div class="slide-body">
+      <div class="grid g2" style="grid-template-columns:1.1fr .9fr;align-items:center">
+        <svg viewBox="0 0 600 300" width="100%" style="max-height:300px">
+          <g font-family="Inter">
+            <!-- outer azure project -->
+            <rect x="20" y="20" width="560" height="260" rx="18" fill="#f3f6ff" stroke="#d4ddfb" stroke-width="2"/>
+            <text x="44" y="50" font-size="14" font-weight="800" fill="#2a6df4">Azure AI Project</text>
+            <text x="44" y="69" font-size="11" fill="#5b6b7e">Managed enterprise AI environment</text>
+            <!-- openai resource -->
+            <rect x="50" y="90" width="500" height="160" rx="14" fill="#fff" stroke="#c7d4f7" stroke-width="1.5"/>
+            <text x="74" y="118" font-size="13" font-weight="700" fill="#0f1b2d">Azure OpenAI Resource</text>
+            <!-- deployment -->
+            <rect x="74" y="138" width="200" height="90" rx="12" fill="#0f1b2d"/>
+            <path d="M174 158l-16 34h9l12-26 7 16h-8l-3 7h20z" fill="#95c11e"/>
+            <text x="174" y="210" font-size="14" font-weight="800" fill="#fff" text-anchor="middle">GPT-4.1</text>
+            <text x="174" y="226" font-size="10.5" fill="#9fb4cc" text-anchor="middle">model deployment</text>
+            <!-- controls -->
+            <rect x="300" y="138" width="226" height="42" rx="9" fill="#eef6d8"/><text x="320" y="164" font-size="12" font-weight="600" fill="#5b7a16">🔑 Managed keys · &lt;SECRET&gt; server-side</text>
+            <rect x="300" y="186" width="226" height="42" rx="9" fill="#eef6d8"/><text x="320" y="212" font-size="12" font-weight="600" fill="#5b7a16">🛡️ Built-in content filtering</text>
+          </g>
+        </svg>
+        <div class="grid g2">
+          <div class="card"><h3><span class="ico b">🏢</span> Enterprise infra</h3><p>Microsoft-operated, SLA-backed platform with hardened operations.</p></div>
+          <div class="card"><h3><span class="ico b">⚙️</span> Managed service</h3><p>No model hosting to maintain — patching and scaling are handled by Azure.</p></div>
+          <div class="card"><h3><span class="ico">🔄</span> High availability</h3><p>Redundant, monitored infrastructure designed for production uptime.</p></div>
+          <div class="card"><h3><span class="ico o">📊</span> Scalable &amp; secure</h3><p>Elastic capacity with platform-level security and access controls.</p></div>
+        </div>
+      </div>
+      <div class="config" style="margin-top:16px">
+<span class="k">AZURE_AI_CHATBOT_DEPLOYMENT_NAME</span> = <span class="v">"gpt-4.1"</span> &nbsp; <span class="k">AZURE_AI_CHATBOT_API_KEY</span> = <span class="red">&lt;SECRET&gt;</span>
+      </div>
+    </div>
+    <div class="footer"><span class="brand-min"><b>NAVIO</b> · Azure AI Architecture</span><span class="conf">● CONFIDENTIAL</span></div>
+  </section>
+
+  <!-- ============ SLIDE 12 — EUROPEAN HOSTING ============ -->
+  <section class="slide">
+    <span class="eyebrow"><span class="dot"></span> Data Residency</span>
+    <h1 class="slide-title">European hosting, <span class="accent">European data</span></h1>
+    <p class="subtitle">Navio's infrastructure is deployed in EU-hosted Azure regions. For organizations operating within Europe, regional processing is a foundational trust and governance requirement.</p>
+    <div class="slide-body">
+      <div class="grid g2" style="grid-template-columns:.85fr 1.15fr;align-items:center">
+        <svg viewBox="0 0 420 320" width="100%" style="max-height:320px">
+          <g font-family="Inter" text-anchor="middle">
+            <circle cx="210" cy="160" r="135" fill="#eef6d8" stroke="#95c11e" stroke-width="2"/>
+            <circle cx="210" cy="160" r="135" fill="none" stroke="#95c11e" stroke-width="2" stroke-dasharray="3 7"/>
+            <text x="210" y="70" font-size="13" font-weight="800" fill="#5b7a16">EU AZURE REGION</text>
+            <!-- stars ring (EU motif) -->
+            <g fill="#ec6607">
+              <circle cx="210" cy="48" r="3"/><circle cx="270" cy="60" r="3"/><circle cx="312" cy="105" r="3"/><circle cx="330" cy="160" r="3"/><circle cx="312" cy="215" r="3"/><circle cx="270" cy="260" r="3"/><circle cx="210" cy="272" r="3"/><circle cx="150" cy="260" r="3"/><circle cx="108" cy="215" r="3"/><circle cx="90" cy="160" r="3"/><circle cx="108" cy="105" r="3"/><circle cx="150" cy="60" r="3"/>
+            </g>
+            <!-- inner nodes -->
+            <rect x="120" y="120" width="180" height="40" rx="9" fill="#fff" stroke="#d6e6a8"/><text x="210" y="145" font-size="12" font-weight="700" fill="#0f1b2d">Navio Backend</text>
+            <rect x="120" y="170" width="180" height="40" rx="9" fill="#fff" stroke="#d6e6a8"/><text x="210" y="195" font-size="12" font-weight="700" fill="#0f1b2d">Azure OpenAI · GPT-4.1</text>
+            <rect x="120" y="220" width="180" height="40" rx="9" fill="#fff" stroke="#d6e6a8"/><text x="210" y="245" font-size="12" font-weight="700" fill="#0f1b2d">Data store</text>
+          </g>
+        </svg>
+        <div>
+          <ul class="clean">
+            <li><span class="b">EU</span><span><b>European hosting strategy</b> — compute and AI inference run within EU-hosted Azure infrastructure.</span></li>
+            <li><span class="b">📍</span><span><b>Data residency</b> — processing stays in-region, aligning with European governance expectations.</span></li>
+            <li><span class="b o">🌍</span><span><b>Regional processing</b> — requests are handled close to the audience they serve.</span></li>
+            <li><span class="b">🏛️</span><span><b>Enterprise governance</b> — regional control supports internal policy and procurement requirements.</span></li>
+            <li><span class="b o">🤝</span><span><b>Customer trust</b> — a clear, European-first posture for European organizations and their users.</span></li>
+          </ul>
+          <div class="card tinted" style="margin-top:18px"><p style="font-size:13.5px"><b>Why it matters:</b> Organizations operating within Europe increasingly require that personal and operational data be processed within the region. EU-hosted infrastructure makes that posture explicit and auditable.</p></div>
+        </div>
+      </div>
+    </div>
+    <div class="footer"><span class="brand-min"><b>NAVIO</b> · European Hosting &amp; Data Residency</span><span class="conf">● CONFIDENTIAL</span></div>
+  </section>
+
+  <!-- ============ SLIDE 13 — GDPR ALIGNMENT ============ -->
+  <section class="slide">
+    <span class="eyebrow"><span class="dot"></span> Privacy Posture</span>
+    <h1 class="slide-title">Designed to <span class="accent">support GDPR principles</span></h1>
+    <p class="subtitle">Navio is architected with privacy-focused controls that map to core GDPR principles — supporting organizations pursuing GDPR compliance.</p>
+    <div class="slide-body">
+      <div class="grid g3">
+        <div class="card"><h3><span class="ico">🗜️</span> Data minimization</h3><p>Only a bounded 10-turn context is processed; no broad data collection beyond what a conversation needs.</p></div>
+        <div class="card"><h3><span class="ico o">⏳</span> Limited retention</h3><p>Short-lived sessions (30 min) and a rolling memory window keep retained data small and transient.</p></div>
+        <div class="card"><h3><span class="ico b">🔐</span> Access controls</h3><p>Origin allow-list, signed sessions, and bot verification gate who can reach the service.</p></div>
+        <div class="card"><h3><span class="ico">🛡️</span> Security measures</h3><p>TLS in transit, server-side secrets, input limits, and rate limiting form a layered safeguard.</p></div>
+        <div class="card"><h3><span class="ico o">🎯</span> Purpose limitation</h3><p>A focused system prompt keeps Navio scoped to its intended assistant role, not open-ended data use.</p></div>
+        <div class="card"><h3><span class="ico b">📋</span> Transparency</h3><p>A consent-gated widget makes the AI interaction explicit to every visitor before use.</p></div>
+      </div>
+      <div class="card" style="margin-top:20px;border-color:#d4ddfb;background:#f3f6ff;display:flex;gap:14px;align-items:flex-start">
+        <span style="font-size:22px">⚖️</span>
+        <p style="font-size:13.5px;color:var(--slate)"><b>Important disclaimer:</b> This presentation does not claim legal certification or formal compliance status. Navio is <b>designed to support GDPR principles</b> and <b>architected with privacy-focused controls</b> to <b>support organizations pursuing GDPR compliance</b>. Formal compliance determinations remain the responsibility of the operating organization and its legal counsel.</p>
+      </div>
+    </div>
+    <div class="footer"><span class="brand-min"><b>NAVIO</b> · GDPR Alignment</span><span class="conf">● CONFIDENTIAL</span></div>
+  </section>
+
+  <!-- ============ SLIDE 14 — 7-LAYER SECURITY MODEL ============ -->
+  <section class="slide">
+    <span class="eyebrow"><span class="dot"></span> Defense in Depth</span>
+    <h1 class="slide-title">Seven layers of <span class="accent">end-to-end security</span></h1>
+    <p class="subtitle">No single control carries the load. Each request passes through seven independent layers — defense in depth, from the browser origin all the way to the infrastructure.</p>
+    <div class="slide-body">
+      <div class="grid" style="grid-template-columns:1fr 1fr;gap:12px 26px">
+        <div class="layer"><span class="ln">1</span><div><div class="lt">Origin Validation</div><div class="ld">CORS allow-list — only sportnavi.de may call Navio</div></div></div>
+        <div class="layer"><span class="ln">5</span><div><div class="lt">Application Controls</div><div class="ld">Input caps, history limits, schema validation</div></div></div>
+        <div class="layer"><span class="ln">2</span><div><div class="lt">Rate Limiting</div><div class="ld">15/min · 300/day per visitor, shared via Redis</div></div></div>
+        <div class="layer"><span class="ln">6</span><div><div class="lt">Azure AI Security</div><div class="ld">Managed keys, content filtering, governed params</div></div></div>
+        <div class="layer"><span class="ln">3</span><div><div class="lt">Bot Protection</div><div class="ld">Cloudflare Turnstile human verification</div></div></div>
+        <div class="layer"><span class="ln">7</span><div><div class="lt">Infrastructure Security</div><div class="ld">EU-hosted Azure, TLS, server-side secrets</div></div></div>
+        <div class="layer"><span class="ln">4</span><div><div class="lt">Session Security</div><div class="ld">HMAC-signed tokens, 30-minute expiry</div></div></div>
+        <div class="layer" style="border-left-color:var(--orange);background:var(--navy)"><span class="ln" style="background:var(--green)">✓</span><div><div class="lt" style="color:#fff">Defense in Depth</div><div class="ld" style="color:#9fb4cc">A breach of one layer is contained by the others</div></div></div>
+      </div>
+    </div>
+    <div class="footer"><span class="brand-min"><b>NAVIO</b> · End-to-End Security Layers</span><span class="conf">● CONFIDENTIAL</span></div>
+  </section>
+
+  <!-- ============ SLIDE 15 — OPERATIONAL EXCELLENCE ============ -->
+  <section class="slide">
+    <span class="eyebrow"><span class="dot"></span> Operations</span>
+    <h1 class="slide-title">Operational <span class="accent">excellence</span></h1>
+    <p class="subtitle">Production confidence comes from visibility and graceful failure. Navio is instrumented to be observed, diagnosed, and scaled with predictable behavior under stress.</p>
+    <div class="slide-body">
+      <div class="card" style="margin-bottom:18px;background:var(--navy);border-color:#233651">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <span style="color:#fff;font-weight:700;font-size:15px">▣ Operations Dashboard</span>
+          <span class="pill" style="background:rgba(149,193,30,.18);color:var(--green)">● All systems nominal</span>
+        </div>
+        <div class="grid g4">
+          <div style="background:#16263d;border-radius:12px;padding:16px"><div style="color:var(--green);font-size:30px;font-weight:800">99.9%</div><div style="color:#9fb4cc;font-size:11px;font-weight:600;margin-top:4px">Availability target</div></div>
+          <div style="background:#16263d;border-radius:12px;padding:16px"><div style="color:#fff;font-size:30px;font-weight:800">&lt;1.2s</div><div style="color:#9fb4cc;font-size:11px;font-weight:600;margin-top:4px">Median response</div></div>
+          <div style="background:#16263d;border-radius:12px;padding:16px"><div style="color:var(--orange);font-size:30px;font-weight:800">0</div><div style="color:#9fb4cc;font-size:11px;font-weight:600;margin-top:4px">Secrets in client</div></div>
+          <div style="background:#16263d;border-radius:12px;padding:16px"><div style="color:#fff;font-size:30px;font-weight:800">100%</div><div style="color:#9fb4cc;font-size:11px;font-weight:600;margin-top:4px">Requests validated</div></div>
+        </div>
+      </div>
+      <div class="grid g3">
+        <div class="card tinted"><h3><span class="ico b">📈</span> Monitoring &amp; logging</h3><p>Structured request logging and a health endpoint expose service state and configuration flags.</p></div>
+        <div class="card tinted"><h3><span class="ico">👁️</span> Observability</h3><p>Rate-limit events, validation rejections, and AI errors are surfaced for diagnosis.</p></div>
+        <div class="card tinted"><h3><span class="ico o">🧯</span> Error handling</h3><p>AI provider faults and content-filter trips map to safe, user-facing messages — never raw errors.</p></div>
+        <div class="card tinted"><h3><span class="ico">📐</span> Scalability</h3><p>Stateless workers + shared Redis quotas scale out horizontally without losing correctness.</p></div>
+        <div class="card tinted"><h3><span class="ico b">🔄</span> Reliability</h3><p>Bounded inputs and outputs keep latency and resource use predictable under load.</p></div>
+        <div class="card tinted"><h3><span class="ico">🩺</span> Health checks</h3><p>A dedicated health route enables automated liveness and readiness probing.</p></div>
+      </div>
+    </div>
+    <div class="footer"><span class="brand-min"><b>NAVIO</b> · Operational Excellence</span><span class="conf">● CONFIDENTIAL</span></div>
+  </section>
+
+  <!-- ============ SLIDE 16 — PRODUCTION READINESS ============ -->
+  <section class="slide">
+    <span class="eyebrow"><span class="dot"></span> Production Readiness</span>
+    <h1 class="slide-title">Ready for <span class="accent">enterprise deployment</span></h1>
+    <p class="subtitle">Every dimension of production readiness is addressed — security, abuse prevention, AI governance, scalability, and infrastructure resilience converge into a deployable platform.</p>
+    <div class="slide-body">
+      <div class="grid g3" style="gap:16px">
+        <div class="card"><div class="pill">SECURITY</div><h3 style="margin-top:12px"><span class="ico">🛡️</span> Security controls</h3><p>Seven independent defense layers, validated end-to-end.</p></div>
+        <div class="card"><div class="pill o">ABUSE</div><h3 style="margin-top:12px"><span class="ico o">🚦</span> Abuse prevention</h3><p>Rate limits, bot verification, and input caps stop automated misuse.</p></div>
+        <div class="card"><div class="pill b">AI</div><h3 style="margin-top:12px"><span class="ico b">🤖</span> AI governance</h3><p>Bounded tokens and low temperature keep output predictable and safe.</p></div>
+        <div class="card"><div class="pill">SCALE</div><h3 style="margin-top:12px"><span class="ico">📈</span> Scalability</h3><p>Stateless design with shared Redis quotas scales horizontally.</p></div>
+        <div class="card"><div class="pill o">INFRA</div><h3 style="margin-top:12px"><span class="ico o">🏗️</span> Infrastructure resilience</h3><p>Managed, EU-hosted Azure infrastructure with high availability.</p></div>
+        <div class="card" style="background:var(--navy);border-color:#233651"><div class="pill" style="background:rgba(149,193,30,.18);color:var(--green)">READY</div><h3 style="margin-top:12px;color:#fff"><span class="ico">✅</span> Enterprise deployment</h3><p style="color:#9fb4cc">All readiness gates met — suitable for production rollout.</p></div>
+      </div>
+    </div>
+    <div class="footer"><span class="brand-min"><b>NAVIO</b> · Production Readiness</span><span class="conf">● CONFIDENTIAL</span></div>
+  </section>
+
+  <!-- ============ SLIDE 17 — KEY SECURITY BENEFITS ============ -->
+  <section class="slide">
+    <span class="eyebrow"><span class="dot"></span> Executive Summary</span>
+    <h1 class="slide-title">Key security <span class="accent">benefits</span></h1>
+    <p class="subtitle">A concise summary of what the Navio architecture delivers — the controls that make it secure, scalable, and trustworthy by design.</p>
+    <div class="slide-body">
+      <div class="grid g3" style="gap:14px">
+        <div class="chip" style="padding:16px"><span class="chk" style="font-size:18px">✓</span> Restricted website access</div>
+        <div class="chip" style="padding:16px"><span class="chk" style="font-size:18px">✓</span> Visitor rate limiting</div>
+        <div class="chip" style="padding:16px"><span class="chk" style="font-size:18px">✓</span> Input controls</div>
+        <div class="chip" style="padding:16px"><span class="chk" style="font-size:18px">✓</span> Session protection</div>
+        <div class="chip" style="padding:16px"><span class="chk" style="font-size:18px">✓</span> Bot mitigation</div>
+        <div class="chip" style="padding:16px"><span class="chk" style="font-size:18px">✓</span> Azure enterprise infrastructure</div>
+        <div class="chip" style="padding:16px"><span class="chk" style="font-size:18px">✓</span> Controlled AI behavior</div>
+        <div class="chip" style="padding:16px"><span class="chk" style="font-size:18px">✓</span> Scalable architecture</div>
+        <div class="chip" style="padding:16px"><span class="chk" style="font-size:18px">✓</span> Privacy-focused design</div>
+      </div>
+      <div class="card" style="margin-top:22px;display:flex;gap:22px;align-items:center;background:var(--paper-2)">
+        <div style="text-align:center;flex:none"><div class="kpi" style="color:var(--green-d)">9</div><div class="kpi-l">Core benefits</div></div>
+        <div style="width:1px;height:54px;background:var(--line)"></div>
+        <div style="text-align:center;flex:none"><div class="kpi">7</div><div class="kpi-l" style="color:var(--green-d)">Security layers</div></div>
+        <div style="width:1px;height:54px;background:var(--line)"></div>
+        <p class="lead" style="font-size:14px">Together these controls form a coherent, defensible posture — <b>secure access, governed AI, and privacy by design</b> — that stands up to enterprise, compliance, and security review.</p>
+      </div>
+    </div>
+    <div class="footer"><span class="brand-min"><b>NAVIO</b> · Key Security Benefits</span><span class="conf">● CONFIDENTIAL</span></div>
+  </section>
+
+  <!-- ============ SLIDE 18 — CONCLUSION ============ -->
+  <section class="slide title-slide">
+    <span class="eyebrow" style="color:var(--green)"><span class="dot"></span> Conclusion</span>
+    <h1 style="font-size:46px;margin-top:14px">An architecture built<br><span class="hl">to be trusted.</span></h1>
+    <p class="sub" style="margin-top:18px">Navio is secure by layered design, scalable by stateless architecture, maintainable through managed services, and ready for production from day one.</p>
+    <div class="grid g4" style="margin-top:36px;gap:14px">
+      <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:18px">
+        <div style="color:var(--green);font-size:15px;font-weight:800;margin-bottom:6px">🔒 Secure</div>
+        <p style="color:rgba(255,255,255,.7);font-size:12.5px;line-height:1.5">Seven defense layers from origin to infrastructure — no single point of failure.</p>
+      </div>
+      <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:18px">
+        <div style="color:var(--green);font-size:15px;font-weight:800;margin-bottom:6px">📈 Scalable</div>
+        <p style="color:rgba(255,255,255,.7);font-size:12.5px;line-height:1.5">Stateless workers and shared Redis quotas scale horizontally without losing correctness.</p>
+      </div>
+      <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:18px">
+        <div style="color:var(--green);font-size:15px;font-weight:800;margin-bottom:6px">🔧 Maintainable</div>
+        <p style="color:rgba(255,255,255,.7);font-size:12.5px;line-height:1.5">Managed Azure services and clean component isolation keep operations simple.</p>
+      </div>
+      <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:18px">
+        <div style="color:var(--green);font-size:15px;font-weight:800;margin-bottom:6px">✅ Production-ready</div>
+        <p style="color:rgba(255,255,255,.7);font-size:12.5px;line-height:1.5">Abuse prevention, AI governance, and EU hosting meet enterprise deployment standards.</p>
+      </div>
+    </div>
+    <p class="sub" style="margin-top:32px;font-size:16px;color:rgba(255,255,255,.85)">Organizations can trust the design because every control is deliberate, layered, and verifiable — security is not an afterthought, it is the foundation.</p>
+    <div class="footer"><span class="brand-min"><b>NAVIO</b> · Thank you</span><span class="conf">● CONFIDENTIAL</span></div>
+  </section>
+
+</div>
+
+<!-- ============ NAV ============ -->
+<div class="controls">
+  <button id="first" title="First (Home)">⏮</button>
+  <button id="prev" title="Previous (←)">‹</button>
+  <span class="count"><span id="cur">1</span> / <span id="total">18</span></span>
+  <button id="next" title="Next (→)">›</button>
+  <button id="last" title="Last (End)">⏭</button>
+</div>
+<div class="hint">← → navigate · F fullscreen · P print</div>
+
+<script>
+(function(){
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var i = 0, n = slides.length;
+  document.getElementById('total').textContent = n;
+  var prog = document.getElementById('progress');
+  function show(x){
+    i = Math.max(0, Math.min(n-1, x));
+    slides.forEach(function(s,k){ s.classList.toggle('active', k===i); });
+    document.getElementById('cur').textContent = i+1;
+    prog.style.width = ((i+1)/n*100) + '%';
+  }
+  document.getElementById('next').onclick = function(){ show(i+1); };
+  document.getElementById('prev').onclick = function(){ show(i-1); };
+  document.getElementById('first').onclick = function(){ show(0); };
+  document.getElementById('last').onclick = function(){ show(n-1); };
+  document.addEventListener('keydown', function(e){
+    if(e.key==='ArrowRight'||e.key==='PageDown'||e.key===' '){ show(i+1); e.preventDefault(); }
+    else if(e.key==='ArrowLeft'||e.key==='PageUp'){ show(i-1); e.preventDefault(); }
+    else if(e.key==='Home'){ show(0); }
+    else if(e.key==='End'){ show(n-1); }
+    else if(e.key==='f'||e.key==='F'){ if(!document.fullscreenElement){ document.documentElement.requestFullscreen(); } else { document.exitFullscreen(); } }
+    else if(e.key==='p'||e.key==='P'){ window.print(); }
+  });
+  show(0);
+})();
+</script>
+</body>
+</html>

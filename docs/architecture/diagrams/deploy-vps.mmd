@@ -1,0 +1,24 @@
+%% VPS deployment (alternative) — see 04-infrastructure-deployment.md §3
+flowchart TB
+    USER["Browser"]
+
+    subgraph VPS["Single Linux server (VPS)"]
+        CADDY["Caddy :80/:443<br/>auto-HTTPS · only public entry"]
+        FE["frontend container<br/>(nginx :8080, internal)"]
+        BE["navio container<br/>(FastAPI :8000, internal)"]
+        REDIS[("redis container<br/>internal only")]
+    end
+
+    subgraph EXT["External services"]
+        AOAI["Azure OpenAI"]
+        PG[("PostgreSQL")]
+        SF["Salesforce"]
+    end
+
+    USER -->|HTTPS| CADDY
+    CADDY -->|/api/* and /health| BE
+    CADDY -->|everything else| FE
+    BE --> REDIS
+    BE --> AOAI
+    BE --> PG
+    BE --> SF
