@@ -99,10 +99,21 @@ If it's not already on GitHub: create a repo and push. Vercel deploys *from* Git
    ALLOWED_ORIGINS=https://TEMP-set-in-part-4
    REDIS_URL=rediss://...upstash...          (add in Part 5; leave unset for now)
    ```
+   **Contact form → Salesforce** (the "Kontakt" form). Add **both** secrets to make it really
+   submit; without them the form runs in demo/simulate mode:
+   ```
+   SALESFORCE_CLIENT_ID=...                  🔒
+   SALESFORCE_CLIENT_SECRET=...              🔒
+   SALESFORCE_TOKEN_URL=https://sportnavi.my.salesforce.com/services/oauth2/token
+   SALESFORCE_INSTANCE_URL=https://sportnavi.my.salesforce.com
+   SALESFORCE_API_VERSION=v65.0
+   SALESFORCE_FLOW_API_NAME=CaseHandler
+   CONTACT_FALLBACK_EMAIL=service@sportnavi.de
+   ```
    **Optional** (have safe defaults — copy from [backend/cloudrun.env.yaml](../../backend/cloudrun.env.yaml)
    if you want to override): `RATE_LIMIT_PER_MIN`, `RATE_LIMIT_PER_DAY`, `MAX_MESSAGE_CHARS`,
-   `MAX_HISTORY_TURNS`, `MAX_TOKENS`, `TEMPERATURE`, `SESSION_TTL_MIN`, `CONFIG_TTL_SEC`, and
-   the `SALESFORCE_*` / `CONTACT_FALLBACK_EMAIL` values for the contact form.
+   `MAX_HISTORY_TURNS`, `MAX_TOKENS`, `TEMPERATURE`, `SESSION_TTL_MIN`, `CONFIG_TTL_SEC`. For
+   email fallback on a Salesforce failure, also set `CONTACT_FROM_EMAIL` + `SMTP_*`.
 5. **Deploy.** When it finishes, copy the backend URL, e.g. `https://navio-backend.vercel.app`.
 6. **Test:** open `https://navio-backend.vercel.app/health` → `{"status":"ok", ... "database":true}`.
 
@@ -205,6 +216,8 @@ one DNS record it shows. SSL is automatic and free. Then add that domain to the 
 | backend | `CLERK_ISSUER`, `CLERK_SECRET_KEY` 🔒, `ADMIN_EMAIL_DOMAINS` | admin login |
 | backend | `ALLOWED_ORIGINS` | the frontend URL(s) |
 | backend | `REDIS_URL` | Upstash — for rate limiting |
+| backend | `SALESFORCE_CLIENT_ID` 🔒, `SALESFORCE_CLIENT_SECRET` 🔒 | contact form → Salesforce (both, or it simulates) |
+| backend | `SALESFORCE_TOKEN_URL`, `SALESFORCE_INSTANCE_URL`, `SALESFORCE_API_VERSION`, `SALESFORCE_FLOW_API_NAME`, `CONTACT_FALLBACK_EMAIL` | contact form config (non-secret) |
 | **frontend** | `VITE_NAVIO_API` | the backend URL |
 | frontend | `VITE_CLERK_PUBLISHABLE_KEY` | Clerk `pk_…` (public) |
 

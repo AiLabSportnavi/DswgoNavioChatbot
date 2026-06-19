@@ -67,7 +67,7 @@ It's **optional**: with `SALESFORCE_CLIENT_ID`/`_SECRET` unset, `/api/contact` r
 "simulate" mode (logs + returns success) so the form stays demoable. On a real failure it
 emails the request to `CONTACT_FALLBACK_EMAIL` so nothing is lost.
 
-> Note: `deploy.ps1` currently pushes only the Azure / DB / Clerk secrets. To make the
-> contact form work **on Cloud Run**, also add the two `SALESFORCE_*` secrets (e.g.
-> `echo "VALUE" | gcloud secrets create salesforce-client-id --data-file=-`, then reference
-> them in the deploy's `--set-secrets`). On **Vercel**, just add them as env vars.
+> **Deploying it:** `deploy.ps1` now pushes the Salesforce secrets **automatically** when
+> `SALESFORCE_CLIENT_ID` + `SALESFORCE_CLIENT_SECRET` are present in `deploy.env` (otherwise the
+> form stays in simulate mode). On **Vercel**, add the same two values as env vars in the
+> backend project. Check `/health` → `"salesforce": true` means it's connected.

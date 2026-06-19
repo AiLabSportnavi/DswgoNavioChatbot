@@ -56,6 +56,8 @@ $AzureKey = Need "AZURE_AI_CHATBOT_API_KEY"
 $DbUrl    = Need "DATABASE_URL"
 $ClerkSk  = Need "CLERK_SECRET_KEY"
 $ClerkPk  = $cfg["VITE_CLERK_PUBLISHABLE_KEY"]   # optional
+$SfId     = $cfg["SALESFORCE_CLIENT_ID"]         # optional (contact form -> Salesforce)
+$SfSecret = $cfg["SALESFORCE_CLIENT_SECRET"]     # optional
 
 # Cloud Run service names (optional in deploy.env; sensible defaults otherwise).
 $BackendName  = if ($cfg["BACKEND_SERVICE"])  { $cfg["BACKEND_SERVICE"].Trim() }  else { "navio" }
@@ -113,12 +115,24 @@ Set-Secret "azure-ai-chatbot-api-key" $AzureKey
 Set-Secret "database-url"             $DbUrl
 Set-Secret "clerk-secret-key"         $ClerkSk
 
+# Build the --set-secrets list for the backend. Salesforce is OPTIONAL: only wired
+# up when BOTH credentials are in deploy.env (otherwise the contact form simulates).
+$script:SecretMap = "AZURE_AI_CHATBOT_API_KEY=azure-ai-chatbot-api-key:latest,DATABASE_URL=database-url:latest,CLERK_SECRET_KEY=clerk-secret-key:latest"
+if (-not [string]::IsNullOrWhiteSpace($SfId) -and -not [string]::IsNullOrWhiteSpace($SfSecret)) {
+  Set-Secret "salesforce-client-id"     $SfId
+  Set-Secret "salesforce-client-secret" $SfSecret
+  $script:SecretMap += ",SALESFORCE_CLIENT_ID=salesforce-client-id:latest,SALESFORCE_CLIENT_SECRET=salesforce-client-secret:latest"
+  Write-Host "    + Salesforce contact form: ENABLED" -ForegroundColor Green
+} else {
+  Write-Host "    (no Salesforce creds in deploy.env - contact form stays in simulate mode)" -ForegroundColor Yellow
+}
+
 # ── 4. Deploy the BACKEND ────────────────────────────────────────────────────
 Write-Host "==> Deploying backend ($BackendName) -- this takes a few minutes..." -ForegroundColor Cyan
 gcloud run deploy $BackendName --source ./backend --region $Region --port 8000 `
   --no-cpu-throttling --max-instances 1 --allow-unauthenticated --quiet `
   --env-vars-file backend/cloudrun.env.yaml `
-  --set-secrets "AZURE_AI_CHATBOT_API_KEY=azure-ai-chatbot-api-key:latest,DATABASE_URL=database-url:latest,CLERK_SECRET_KEY=clerk-secret-key:latest"
+  --set-secrets "$($script:SecretMap)"
 if ($LASTEXITCODE -ne 0) { Die "Backend deploy failed (the previous version stays live)." }
 $BackendUrl = (gcloud run services describe $BackendName --region $Region --format="value(status.url)").Trim()
 Write-Host "    backend live at  $BackendUrl" -ForegroundColor Green
