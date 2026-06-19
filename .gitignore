@@ -11,3 +11,7 @@ env/
 *.egg-info/
 .pytest_cache/
 .gstack/
+
+# Local tooling (Claude Code config + MCP servers) — keep out of the repo
+.claude/
+.mcp.json
