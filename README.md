@@ -22,7 +22,7 @@ frontend/                React + Vite SPA + the embeddable chat widget
   nginx.conf             serves the built SPA (static only)
   vercel.json            SPA routing config for a Vercel deploy
   .env                   frontend env (git-ignored) — Clerk publishable key + backend URL
-.env.example             template for the backend env (copy → backend/.env)
+backend/.env.example     template for the backend env (copy → backend/.env)
 ```
 
 Deployment models that live in this repo (the backend and frontend deploy **independently**):
@@ -63,7 +63,7 @@ Secrets live in **git-ignored `.env` files** — never committed. For local dev 
 
 ```powershell
 Copy-Item frontend\.env.example frontend\.env
-Copy-Item .env.example backend\.env
+Copy-Item backend\.env.example backend\.env
 ```
 
 > On a cloud host the backend's secrets go into that host's env/secret store (Cloud Run Secret Manager, Vercel Environment Variables), **not** a `.env` file — see [DEPLOY.md](DEPLOY.md) and the [backend README](backend/README.md#environment-variables).
@@ -71,7 +71,7 @@ Copy-Item .env.example backend\.env
 Then open each `.env` and fill in:
 
 ```ini
-# backend/.env  (or root .env)  — secrets
+# backend/.env  — secrets
 AZURE_AI_CHATBOT_API_KEY=...                 # from Azure portal
 AZURE_AI_CHATBOT_OPENAI_ENDPOINT=https://...openai.azure.com/openai/v1
 AZURE_AI_CHATBOT_DEPLOYMENT_NAME=gpt-4.1
@@ -84,7 +84,7 @@ ADMIN_EMAIL_DOMAINS=sportnavi.de             # who may edit the system prompt
 VITE_CLERK_PUBLISHABLE_KEY=pk_test_...        # the login UI key
 ```
 
-All other settings (rate limits, input caps, Turnstile, Redis) have safe defaults — see the comments in [.env.example](.env.example). Authentication is explained in detail under [Admin login](#admin-login-clerk).
+All other settings (rate limits, input caps, Turnstile, Redis) have safe defaults — see the comments in [backend/.env.example](backend/.env.example). Authentication is explained in detail under [Admin login](#admin-login-clerk).
 
 ---
 

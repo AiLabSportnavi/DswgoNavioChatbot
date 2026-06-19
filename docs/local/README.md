@@ -19,7 +19,7 @@ Secrets live in **git-ignored `.env` files**. Copy each template and fill it in.
 
 ```powershell
 # backend secrets  (Azure key, database, Clerk secret)
-Copy-Item .env.example backend\.env
+Copy-Item backend\.env.example backend\.env
 
 # frontend public key (the login UI key)
 Copy-Item frontend\.env.example frontend\.env
