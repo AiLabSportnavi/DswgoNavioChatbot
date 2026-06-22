@@ -6,12 +6,16 @@ project. Navio has two services — a **backend** (FastAPI) and a **frontend**
 a **Postgres database** — Supabase or Azure — and **Clerk** for admin login). You
 will deploy both Cloud Run services into your GCP project.
 
-> Prefer Vercel for one or both services? The backend ships a
-> [backend/vercel.json](backend/vercel.json) and the frontend a
-> [frontend/vercel.json](frontend/vercel.json); see the
-> [backend README → Option A](backend/README.md#option-a--vercel-serverless). The two
-> services are independent, so you can mix hosts (e.g. backend on Cloud Run, frontend
-> on Vercel) — just set `VITE_NAVIO_API` + `ALLOWED_ORIGINS` to match.
+> **Want one command instead of these manual steps?** Fill in `backend/.env` (secrets)
+> and `deploy.env` (just GCP project/region), then run `./deploy.ps1` — it does §2–§8
+> automatically. The manual steps below are for understanding or one-off control.
+>
+> **Other hosts:** the two services are independent, so you can mix hosts.
+> - **Vercel** — backend + frontend ship `vercel.json`; see [docs/vercel/](docs/vercel/README.md).
+> - **Plain Docker / any host** (VPS, Render, Railway…) — see [docs/docker/](docs/docker/README.md).
+>
+> Whichever host you pick, **backend secrets live in one file: `backend/.env`**, and the
+> frontend only carries public values. Just set `VITE_NAVIO_API` + `ALLOWED_ORIGINS` to match.
 
 Total time: ~30 minutes if you reuse existing resources, longer if you create your own.
 

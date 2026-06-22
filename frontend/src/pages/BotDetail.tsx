@@ -268,7 +268,7 @@ const NARROW = 'mx-auto max-w-3xl'
 /* ───────────────────────────────────────────────────────────────────── */
 export default function BotDetail({ id }: { id: string }) {
   const bot = getBot(id)
-  const { getToken } = useAuth()
+  const { getToken, isSignedIn } = useAuth()
   const sections = useRef<Record<string, HTMLElement | null>>({})
   const [activeId, setActiveId] = useState('overview')
   const [systemPrompt, setSystemPrompt] = useState('')
@@ -283,12 +283,20 @@ export default function BotDetail({ id }: { id: string }) {
 
   useEffect(() => {
     let alive = true
-    getConfig()
+    // The prompt is admin-only on the backend now — only fetch it when signed in,
+    // with the Clerk token attached. Signed-out visitors never receive it.
+    if (!isSignedIn) {
+      setConfigLoading(false)
+      return
+    }
+    setConfigLoading(true)
+    getToken()
+      .then((token) => getConfig(token))
       .then((c) => alive && setSystemPrompt(c.system_prompt))
       .catch(() => {})
       .finally(() => alive && setConfigLoading(false))
     return () => { alive = false }
-  }, [])
+  }, [isSignedIn, getToken])
 
   useEffect(() => {
     const ratios: Record<string, number> = {}

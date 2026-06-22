@@ -67,11 +67,19 @@ ALLOWED_ORIGINS = [
     o.strip()
     for o in os.getenv(
         "ALLOWED_ORIGINS",
-        "https://sportnavi.de,https://www.sportnavi.de,"
         "https://ncr4ailab.de,https://www.ncr4ailab.de",
     ).split(",")
     if o.strip()
 ]
+# Any SportNavi site can embed the widget: every https://*.sportnavi.de host
+# (apex + any subdomain depth) is allowed without redeploying. localhost/127.0.0.1
+# are allowed so a local test page can prove a *.sportnavi.de origin would pass.
+ALLOWED_ORIGIN_REGEX = os.getenv(
+    "ALLOWED_ORIGIN_REGEX",
+    r"^https://([a-z0-9-]+\.)*sportnavi\.de$"
+    r"|^http://localhost(:\d+)?$"
+    r"|^http://127\.0\.0\.1(:\d+)?$",
+)
 RATE_LIMIT_PER_MIN = os.getenv("RATE_LIMIT_PER_MIN", "15")
 RATE_LIMIT_PER_DAY = os.getenv("RATE_LIMIT_PER_DAY", "300")
 MAX_MESSAGE_CHARS = int(os.getenv("MAX_MESSAGE_CHARS", "2000"))
@@ -96,6 +104,10 @@ BASE_DIR = Path(__file__).parent
 SYSTEM_PROMPT_PATH = BASE_DIR / "prompts" / "SYSTEM_PROMPT.md"
 
 ADMIN_TOKEN = os.getenv("ADMIN_TOKEN", "").strip()
+# Fail-closed admin: when NEITHER Clerk NOR an ADMIN_TOKEN is configured, admin
+# endpoints are denied by default (so a misconfigured deploy can never leave the
+# prompt world-readable/writable). Set ALLOW_OPEN_ADMIN=true ONLY for local dev.
+ALLOW_OPEN_ADMIN = os.getenv("ALLOW_OPEN_ADMIN", "").strip().lower() in ("1", "true", "yes")
 
 # How long an instance trusts its cached config before re-reading the database.
 # Small so admin edits propagate across instances within seconds (0 = read every time).
@@ -306,6 +318,7 @@ app.state.limiter = limiter
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
+    allow_origin_regex=ALLOWED_ORIGIN_REGEX,
     allow_methods=["GET", "POST"],
     allow_headers=["Content-Type", "X-Navio-Session", "X-Admin-Token", "Authorization"],
 )
@@ -534,12 +547,28 @@ def require_admin(authorization: str | None, admin_token: str | None) -> None:
         clerk_auth.require_admin(authorization)  # raises 401/403 on failure
         return
     # Legacy fallback when Clerk isn't wired up.
-    if ADMIN_TOKEN and admin_token != ADMIN_TOKEN:
-        raise HTTPException(status_code=401, detail="Admin-Token erforderlich. / Admin token required.")
+    if ADMIN_TOKEN:
+        if admin_token != ADMIN_TOKEN:
+            raise HTTPException(status_code=401, detail="Admin-Token erforderlich. / Admin token required.")
+        return
+    # Neither Clerk nor an ADMIN_TOKEN is configured. Fail CLOSED so the prompt is
+    # never silently exposed; a developer can opt into open admin locally.
+    if ALLOW_OPEN_ADMIN:
+        return
+    raise HTTPException(
+        status_code=503,
+        detail="Admin-Zugang ist nicht konfiguriert. / Admin access is not configured.",
+    )
 
 
 @app.get("/api/config")
-def get_config() -> dict:
+def get_config(
+    authorization: str | None = Header(default=None),
+    x_admin_token: str | None = Header(default=None),
+) -> dict:
+    # Reading the prompt is admin-only: only the internal team (verified email on an
+    # allow-listed domain) may see it. Public callers get 401/403 — never the prompt.
+    require_admin(authorization, x_admin_token)
     refresh_config()
     return {
         "system_prompt": _config["system_prompt"],

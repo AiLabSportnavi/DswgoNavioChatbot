@@ -52,6 +52,80 @@ The database is **Supabase** or **Azure Database for PostgreSQL** — both plain
 
 ---
 
+## Credentials: what to fill in, and where (start here — non-technical)
+
+You only ever fill in **two files** (a third only if you deploy to Google Cloud Run).
+Everything else already has the right default — don't touch it.
+
+> **The one rule to remember:** secret keys go in the **backend** file only. The
+> frontend file holds only "public" values that are safe for anyone to see. Never put a
+> secret in the frontend file.
+
+### 📄 File 1 — `backend/.env`  (the secret keys)
+
+First make your copy of the template:
+```powershell
+Copy-Item backend\.env.example backend\.env
+```
+Then open `backend/.env` and fill in these **four** lines:
+
+| Line to fill | What it is | Where to get it |
+|---|---|---|
+| `AZURE_AI_CHATBOT_API_KEY` | The key that powers the AI (it costs money per answer) | Azure portal → your OpenAI resource → **Keys and Endpoint** |
+| `AZURE_AI_CHATBOT_OPENAI_ENDPOINT` | The AI's web address | same Azure page (Sportnavi's: `https://ai-chatbot-projekt-resource.openai.azure.com/openai/v1`) |
+| `DATABASE_URL` | The database that saves chats | Supabase → **Connect** → **Transaction pooler** (the `…pooler.supabase.com:6543` one — **not** the `db.…supabase.co` one) |
+| `CLERK_SECRET_KEY` | Admin-login key (starts with `sk_`) | Clerk dashboard → **API Keys** |
+
+**Leave everything else in this file as-is** — it's already set for Sportnavi
+(`gpt-4.1`, the Clerk address, `ADMIN_EMAIL_DOMAINS=sportnavi.de,ncr4ailab.de`, rate
+limits, etc.).
+
+*Optional, can stay blank:* `SALESFORCE_CLIENT_ID` + `SALESFORCE_CLIENT_SECRET` (the
+Kontakt form — blank just means it pretends to send) and `TURNSTILE_SECRET` (bot
+protection — blank means off).
+
+### 📄 File 2 — `frontend/.env`  (public values, safe for the browser)
+
+Make your copy:
+```powershell
+Copy-Item frontend\.env.example frontend\.env
+```
+Then fill in these **two** lines:
+
+| Line to fill | What it is | Where to get it |
+|---|---|---|
+| `VITE_CLERK_PUBLISHABLE_KEY` | The login button's public key (starts with `pk_`) | Clerk dashboard → **API Keys** → Publishable key |
+| `VITE_NAVIO_API` | The backend's web address | Leave **blank** for local testing. For the live site, this is the backend URL you get after deploying it. |
+
+> ⚠️ **Never** put the Azure key, the database URL, or the Clerk `sk_` key in this file.
+> For the **live website** the same two values go in `frontend/.env.production`.
+
+### 📄 File 3 — `deploy.env`  (ONLY if you deploy to Google Cloud Run)
+
+This file says *where* to deploy — **no secrets**. Make your copy and fill two lines:
+```powershell
+Copy-Item deploy.env.example deploy.env
+```
+| Line to fill | Value for Sportnavi |
+|---|---|
+| `GCP_PROJECT` | `navio-sportnavi-prod` |
+| `GCP_REGION` | `europe-west3` |
+
+(The deploy reads the secret keys straight from `backend/.env`, so you don't repeat them here.)
+
+### ✅ In one picture
+
+| If you want to… | Fill in… |
+|---|---|
+| **Run it on your laptop** | `backend/.env` + `frontend/.env` |
+| **Put it live on Cloud Run** | `backend/.env` + `deploy.env` + `frontend/.env.production` |
+| **Put it live with Docker / another host** | `backend/.env` + `frontend/.env.production` (see [docs/docker/](docs/docker/README.md)) |
+
+That's it. The detailed reference for every single setting is in the next section and in
+the comments inside [backend/.env.example](backend/.env.example).
+
+---
+
 ## 1. Environment setup (do this once)
 
 Secrets live in **git-ignored `.env` files** — never committed. For local dev there are two; copy each from its `.example` template and fill in the values.

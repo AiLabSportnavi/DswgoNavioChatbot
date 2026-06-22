@@ -2,6 +2,10 @@
 .env
 deploy.env
 
+# Transient deploy/build logs
+deploy.log
+*.log
+
 # Python
 __pycache__/
 *.py[cod]

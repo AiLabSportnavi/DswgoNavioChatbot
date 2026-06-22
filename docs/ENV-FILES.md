@@ -23,23 +23,26 @@ whole map — and which ones *you* touch for each task.
 | **`frontend/.env`** | 🔒 ignored | the frontend (Vite) **locally** | the public Clerk key for **local dev** |
 | `frontend/.env.production` | ✅ committed | the frontend **build** | public values baked into the site (Clerk `pk_…`, backend URL) |
 | `deploy.env.example` | ✅ template | you (copy it) | the template for `deploy.env` |
-| **`deploy.env`** | 🔒 ignored | `deploy.ps1` (Cloud Run) | secrets **+** GCP project/region for the **Cloud Run deploy** |
+| **`deploy.env`** | 🔒 ignored | `deploy.ps1` (Cloud Run) | **only** GCP project/region + service names. Secrets come from `backend/.env` |
 
-> **Why are there two secret files (`backend/.env` and `deploy.env`)?** They hold the *same*
-> secret values but for two different jobs: `backend/.env` runs the app **on your laptop**;
-> `deploy.env` pushes those secrets to **Google Secret Manager** when you deploy. Local vs.
-> cloud — that's the only reason.
+> **One backend file for secrets.** `backend/.env` is the single source of backend
+> secrets — it runs the app on your laptop, in Docker, AND `deploy.ps1` reads it to push
+> those secrets into Google Secret Manager when deploying to Cloud Run. So you fill secrets
+> in **one** place. `deploy.env` only says *where* to deploy (GCP project/region). Anything
+> you put in `deploy.env` overrides `backend/.env` — handy if prod should differ from local.
 
 ## Which files do I touch for each task?
 
 | I want to… | Edit these | Ignore the rest |
 |---|---|---|
 | **Run locally** | `backend/.env` + `frontend/.env` | — |
-| **Deploy to Cloud Run** (`./deploy.ps1`) | `deploy.env` (secrets+project) and, for non-secret tweaks, `backend/cloudrun.env.yaml` | — |
-| **Deploy to Vercel** | *none* — you paste the values into the Vercel **dashboard** | all `.env` files |
+| **Deploy with Docker** (any host) | `backend/.env` + `frontend/.env.production` — see [docs/docker/](docker/README.md) | `deploy.env` |
+| **Deploy to Cloud Run** (`./deploy.ps1`) | `backend/.env` (secrets) + `deploy.env` (GCP project/region); non-secret tweaks in `backend/cloudrun.env.yaml` | — |
+| **Deploy to Vercel** | `backend/.env` values pasted into the Vercel **dashboard** + `frontend/.env.production` | `deploy.env` |
 
-So: **3 files total** ever need *your* secrets — `backend/.env` (local), `deploy.env` (Cloud
-Run), and the Vercel dashboard (Vercel). Everything else is templates or public config.
+So your **secrets live in just one file** — `backend/.env`. Every deploy path reads from it
+(Cloud Run via `deploy.ps1`, Docker via `--env-file`, Vercel by pasting the same keys).
+`frontend/.env` / `.env.production` only ever hold **public** values. Nothing secret is duplicated.
 
 ## ⚠️ One file to delete
 

@@ -65,8 +65,11 @@ export type NavioConfig = {
   admin_required: boolean
 }
 
-export async function getConfig(signal?: AbortSignal): Promise<NavioConfig> {
-  const res = await fetch(`${API_BASE}/api/config`, { signal })
+/** Reading the prompt is admin-only — pass the Clerk session token (from `getToken()`). */
+export async function getConfig(token?: string | null, signal?: AbortSignal): Promise<NavioConfig> {
+  const headers: Record<string, string> = {}
+  if (token) headers.Authorization = `Bearer ${token}`
+  const res = await fetch(`${API_BASE}/api/config`, { headers, signal })
   if (!res.ok) throw new Error(`Config unavailable (${res.status}).`)
   return (await res.json()) as NavioConfig
 }

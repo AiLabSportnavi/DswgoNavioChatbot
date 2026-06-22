@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Navio Widget — Embed Test</title>
+    <style>
+      :root { color-scheme: light; }
+      body {
+        margin: 0;
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        color: #1a1a1a;
+        background: #f4f6f8;
+        line-height: 1.55;
+      }
+      .wrap { max-width: 760px; margin: 0 auto; padding: 48px 24px 120px; }
+      h1 { font-size: 1.7rem; margin: 0 0 4px; }
+      .sub { color: #5b6470; margin: 0 0 32px; }
+      .card {
+        background: #fff;
+        border: 1px solid #e4e8ec;
+        border-radius: 12px;
+        padding: 20px 22px;
+        margin: 0 0 18px;
+      }
+      .card h2 { font-size: 1rem; margin: 0 0 10px; }
+      code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+      pre {
+        background: #0f172a; color: #e2e8f0; border-radius: 8px;
+        padding: 14px 16px; overflow-x: auto; font-size: 0.82rem; margin: 0;
+      }
+      .pill {
+        display: inline-block; font-size: 0.78rem; font-weight: 600;
+        padding: 2px 10px; border-radius: 999px; background: #eef6e0; color: #4d6b12;
+      }
+      .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+      .muted { color: #5b6470; font-size: 0.9rem; }
+      a { color: #ec6607; }
+      .arrow { position: fixed; bottom: 96px; right: 30px; color: #95c11e;
+               font-weight: 600; font-size: 0.9rem; text-align: right; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="row"><span class="pill">Embed test</span></div>
+      <h1>Navio Widget — Embed Test</h1>
+      <p class="sub">
+        This static page pretends to be a SportNavi club website. The widget below is
+        loaded from our deployment exactly the way a real club would embed it. Look for
+        the chat launcher in the bottom-right corner.
+      </p>
+
+      <div class="card">
+        <h2>What this page does</h2>
+        <p class="muted" style="margin:0">
+          It includes a single <code>&lt;script&gt;</code> tag that pulls
+          <code>navio-widget.js</code> from the deployed frontend and points it at the
+          deployed backend via <code>data-api</code>. Nothing else on this page is the
+          widget — it mounts itself into an isolated Shadow DOM.
+        </p>
+      </div>
+
+      <div class="card">
+        <h2>The embed snippet (what a club pastes)</h2>
+        <pre>&lt;script
+  src="https://navio-frontend-34ktkxptbq-ey.a.run.app/navio-widget.js"
+  data-api="https://navio-34ktkxptbq-ey.a.run.app"&gt;
+&lt;/script&gt;</pre>
+      </div>
+
+      <div class="card">
+        <h2>Why it works here</h2>
+        <p class="muted" style="margin:0">
+          The backend CORS allowlist accepts any <code>*.sportnavi.de</code> origin plus
+          <code>localhost</code>. That is why this page must be opened through a local
+          server (e.g. <code>http://localhost:8000</code>) and not as a
+          <code>file://</code> path — a <code>file://</code> origin is <code>null</code>
+          and the backend will reject it. See <a href="./README.md">README.md</a> for the
+          one-line command to serve it.
+        </p>
+      </div>
+    </div>
+
+    <div class="arrow">Chat launcher &rarr;<br />bottom-right</div>
+
+    <!-- ── Navio widget: the exact snippet a SportNavi club would embed ────────── -->
+    <script
+      src="https://navio-frontend-34ktkxptbq-ey.a.run.app/navio-widget.js"
+      data-api="https://navio-34ktkxptbq-ey.a.run.app"></script>
+  </body>
+</html>

@@ -21,7 +21,28 @@
 $ErrorActionPreference = "Stop"
 Set-Location $PSScriptRoot   # always run from the repo root
 
-# ── 1. Load deploy.env ───────────────────────────────────────────────────────
+# ── 1. Load config ───────────────────────────────────────────────────────────
+# Single source of truth for BACKEND secrets/config is backend/.env (the same file
+# local dev + Docker use). deploy.env then only needs the Cloud-Run-specific bits
+# (GCP_PROJECT/REGION, service names). We load backend/.env FIRST, then layer
+# deploy.env on top — so anything set in deploy.env OVERRIDES backend/.env. That
+# keeps old setups working (secrets may still live in deploy.env) AND lets deploy.env
+# override a single value for production (e.g. a prod DATABASE_URL different from local).
+function Import-EnvFile($path, $target) {
+  if (-not (Test-Path $path)) { return }
+  foreach ($raw in Get-Content $path) {
+    $line = $raw.Trim()
+    if (-not $line -or $line.StartsWith("#") -or -not $line.Contains("=")) { continue }
+    $parts = $line -split "=", 2
+    $key = $parts[0].Trim()
+    $val = $parts[1].Trim()
+    if ($val.StartsWith('"') -and $val.EndsWith('"') -and $val.Length -ge 2) {
+      $val = $val.Substring(1, $val.Length - 2)
+    }
+    $target[$key] = $val
+  }
+}
+
 $envFile = Join-Path $PSScriptRoot "deploy.env"
 if (-not (Test-Path $envFile)) {
   Write-Host "X  deploy.env not found." -ForegroundColor Red
@@ -29,17 +50,8 @@ if (-not (Test-Path $envFile)) {
   exit 1
 }
 $cfg = @{}
-foreach ($raw in Get-Content $envFile) {
-  $line = $raw.Trim()
-  if (-not $line -or $line.StartsWith("#") -or -not $line.Contains("=")) { continue }
-  $parts = $line -split "=", 2
-  $key = $parts[0].Trim()
-  $val = $parts[1].Trim()
-  if ($val.StartsWith('"') -and $val.EndsWith('"') -and $val.Length -ge 2) {
-    $val = $val.Substring(1, $val.Length - 2)
-  }
-  $cfg[$key] = $val
-}
+Import-EnvFile (Join-Path $PSScriptRoot "backend/.env") $cfg   # base: backend secrets + config
+Import-EnvFile $envFile $cfg                                    # deploy.env overrides (GCP + any prod overrides)
 
 function Need($key) {
   if (-not $cfg.ContainsKey($key) -or [string]::IsNullOrWhiteSpace($cfg[$key])) {
