@@ -1,17 +1,30 @@
 import { useState } from 'react'
-import { Info, Refresh, Close, Lock, ArrowLeft, ArrowRight, Check } from './icons'
+import { Info, Refresh, Close, Lock, ArrowLeft, ArrowRight, Check, Sun, Moon } from './icons'
 import NavioChat from './NavioChat'
 import NavioMenu, { type MenuChoice } from './NavioMenu'
 import KontaktForm from './KontaktForm'
 import type { Chatbot } from '../data/bots'
+import type { Theme } from '../lib/useTheme'
 
 type View = 'menu' | 'faq' | 'form'
 
 const ADVANTAGES = [
-  'Schreib in jeder Sprache – Navio antwortet in deiner',
-  'Antwortet nur mit offiziellen Sportnavi-Infos – erfindet nichts',
-  'DSGVO-konform – deine Zustimmung vor jeder Nutzung',
-  'FAQ-Agent & Kontaktformular in einem Widget',
+  {
+    de: 'Schreib in jeder Sprache – Navio antwortet in deiner',
+    en: 'Write in any language — Navio replies in yours',
+  },
+  {
+    de: 'Antwortet nur mit offiziellen Sportnavi-Infos – erfindet nichts',
+    en: 'Answers only from official Sportnavi info — never invents facts',
+  },
+  {
+    de: 'DSGVO-konform – deine Zustimmung vor jeder Nutzung',
+    en: 'EU / GDPR-compliant — your consent before every use',
+  },
+  {
+    de: 'FAQ-Agent & Kontaktformular in einem Widget',
+    en: 'FAQ agent & contact form in one widget',
+  },
 ]
 
 /**
@@ -26,12 +39,17 @@ export default function NavioMenuChat({
   onClose,
   privacyNotice,
   privacyUrl,
+  theme,
+  onToggleTheme,
 }: {
   bot: Chatbot
   className?: string
   onClose?: () => void
   privacyNotice?: string
   privacyUrl?: string
+  /** Current colour theme + toggle, surfaced as a header button. */
+  theme?: Theme
+  onToggleTheme?: () => void
 }) {
   const notice = privacyNotice ?? bot.privacy.notice
   const policyUrl = privacyUrl ?? bot.privacy.url
@@ -62,7 +80,7 @@ export default function NavioMenuChat({
 
   return (
     <div
-      className={`flex flex-col overflow-hidden rounded-3xl border border-black/[0.06] bg-white ${className}`}
+      className={`flex flex-col overflow-hidden rounded-3xl border border-border bg-surface text-fg ${className}`}
     >
       {/* header — Sportnavi green */}
       <div className="flex items-center gap-3 bg-brand-green px-4 py-3 text-white">
@@ -89,7 +107,18 @@ export default function NavioMenuChat({
             </div>
           )}
         </div>
-        {/* view-aware controls: info on the menu, reset in the chat, close always */}
+        {/* view-aware controls: theme toggle + info on the menu, reset in the chat, close always */}
+        {onToggleTheme && !showInfo && (
+          <button
+            type="button"
+            onClick={onToggleTheme}
+            aria-label={theme === 'dark' ? 'Heller Modus' : 'Dunkler Modus'}
+            title={theme === 'dark' ? 'Heller Modus' : 'Dunkler Modus'}
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-white/15 transition-colors hover:bg-white/30"
+          >
+            {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          </button>
+        )}
         {view === 'menu' && !showInfo && (
           <button
             type="button"
@@ -126,40 +155,51 @@ export default function NavioMenuChat({
       {showInfo ? (
         <div className="flex-1 space-y-4 overflow-y-auto p-5">
           <div>
-            <h3 className="font-display text-base font-semibold text-ink">Über {bot.name}</h3>
-            <p className="mt-1.5 text-sm leading-relaxed text-zinc-600">{bot.tagline}</p>
+            <h3 className="font-display text-base font-semibold text-fg">Über {bot.name}</h3>
+            <p className="text-xs leading-relaxed text-fg-subtle">About {bot.name}</p>
+            <p className="mt-2 text-sm leading-relaxed text-fg-muted">
+              {bot.name} begrüßt dich mit einem kurzen Menü: zuerst der Datenschutz, dann die Wahl
+              zwischen FAQ-Agent und Kontaktformular – beides im selben Widget.
+            </p>
+            <p className="mt-1.5 text-xs leading-relaxed text-fg-subtle">
+              {bot.name} greets you with a short menu: first the privacy consent, then your choice
+              between the FAQ agent and a contact form — both in one widget.
+            </p>
           </div>
           <ul className="space-y-2.5">
             {ADVANTAGES.map((a) => (
-              <li key={a} className="flex items-start gap-2 text-sm">
-                <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-brand-green/20 text-ink">
+              <li key={a.de} className="flex items-start gap-2 text-sm">
+                <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-brand-green/20 text-fg">
                   <Check className="h-3 w-3" />
                 </span>
-                <span className="text-zinc-700">{a}</span>
+                <span>
+                  <span className="text-fg-muted">{a.de}</span>
+                  <span className="block text-xs text-fg-subtle">{a.en}</span>
+                </span>
               </li>
             ))}
           </ul>
           <button
             type="button"
             onClick={() => setShowInfo(false)}
-            className="rounded-full bg-ink px-4 py-2 text-sm lowercase text-white"
+            className="rounded-full bg-fg px-4 py-2 text-sm lowercase text-surface"
           >
             zurück
           </button>
         </div>
       ) : !consented ? (
         <div className="flex-1 overflow-y-auto p-4">
-          <div className="rounded-2xl border border-black/[0.08] bg-white p-4 soft-shadow">
+          <div className="rounded-2xl border border-border bg-surface p-4 soft-shadow">
             <div className="flex items-center gap-2">
               <Lock className="h-4 w-4 text-brand-orange" />
-              <span className="font-display text-sm font-semibold text-ink">Datenschutzhinweis</span>
+              <span className="font-display text-sm font-semibold text-fg">Datenschutzhinweis</span>
             </div>
-            <p className="mt-3 text-sm leading-relaxed text-zinc-600">{notice}</p>
+            <p className="mt-3 text-sm leading-relaxed text-fg-muted">{notice}</p>
             <a
               href={policyUrl}
               target="_blank"
               rel="noreferrer"
-              className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-ink underline underline-offset-2 transition-colors hover:text-brand-green"
+              className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-fg underline underline-offset-2 transition-colors hover:text-brand-green"
             >
               Zur Datenschutzerklärung / Privacy Policy
               <ArrowRight className="h-3.5 w-3.5" />
@@ -183,7 +223,7 @@ export default function NavioMenuChat({
               <button
                 type="button"
                 onClick={() => setDeclined(true)}
-                className="flex-1 rounded-full border border-ink/15 px-4 py-2 text-sm text-ink transition-colors hover:border-ink/40"
+                className="flex-1 rounded-full border border-border px-4 py-2 text-sm text-fg transition-colors hover:border-fg/40"
               >
                 Ablehnen
               </button>
@@ -208,12 +248,12 @@ export default function NavioMenuChat({
       )}
 
       {/* always-visible Datenschutz / Privacy link */}
-      <div className="border-t border-black/[0.04] bg-white px-4 py-2 text-center">
+      <div className="border-t border-border bg-surface px-4 py-2 text-center">
         <a
           href={policyUrl}
           target="_blank"
           rel="noreferrer"
-          className="text-[11px] text-zinc-400 underline transition-colors hover:text-ink"
+          className="text-[11px] text-fg-subtle underline transition-colors hover:text-fg"
         >
           Datenschutz · Privacy Policy
         </a>

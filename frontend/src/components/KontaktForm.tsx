@@ -49,7 +49,7 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 function Label({ children, required }: { children: ReactNode; required?: boolean }) {
   return (
-    <label className="mb-1.5 block font-display text-[13px] font-medium text-ink">
+    <label className="mb-1.5 block font-display text-[13px] font-medium text-fg">
       {children}
       {required && <span className="text-brand-orange"> *</span>}
     </label>
@@ -57,7 +57,7 @@ function Label({ children, required }: { children: ReactNode; required?: boolean
 }
 
 const fieldBase =
-  'w-full rounded-xl border bg-bg-base px-3.5 py-2.5 text-sm text-ink placeholder:text-zinc-400 transition-colors focus:outline-none focus:ring-2 focus:ring-brand-green/40'
+  'w-full rounded-xl border bg-surface-muted px-3.5 py-2.5 text-sm text-fg placeholder:text-fg-subtle transition-colors focus:outline-none focus:ring-2 focus:ring-brand-green/40'
 
 export default function KontaktForm({
   bot,
@@ -161,8 +161,8 @@ export default function KontaktForm({
         >
           <Check className="h-8 w-8" />
         </motion.span>
-        <h3 className="mt-5 font-display text-xl font-semibold text-ink">Danke, {f.name.split(' ')[0] || 'dir'}! 🎉</h3>
-        <p className="mt-2 max-w-xs text-sm leading-relaxed text-zinc-600">
+        <h3 className="mt-5 font-display text-xl font-semibold text-fg">Danke, {f.name.split(' ')[0] || 'dir'}! 🎉</h3>
+        <p className="mt-2 max-w-xs text-sm leading-relaxed text-fg-muted">
           Deine Nachricht ist bei uns eingegangen. Unser Team meldet sich zeitnah bei dir –
           in der Regel innerhalb von 1–2 Werktagen.
         </p>
@@ -180,7 +180,7 @@ export default function KontaktForm({
           <button
             type="button"
             onClick={onBack}
-            className="rounded-full px-5 py-2 text-sm text-zinc-500 transition-colors hover:text-ink"
+            className="rounded-full px-5 py-2 text-sm text-fg-subtle transition-colors hover:text-fg"
           >
             Zurück zum Menü
           </button>
@@ -193,7 +193,7 @@ export default function KontaktForm({
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       <form onSubmit={handleSubmit} className="flex-1 space-y-5 overflow-y-auto px-4 py-4" noValidate>
-        <p className="text-sm leading-relaxed text-zinc-600">
+        <p className="text-sm leading-relaxed text-fg-muted">
           Du hast Fragen oder willst direkt loslegen? Schreib uns – wir helfen dir gerne weiter.
         </p>
 
@@ -210,10 +210,10 @@ export default function KontaktForm({
                   onClick={() => selectMembership(m.value)}
                   className={`rounded-xl border px-2 py-2 text-xs font-medium transition-colors ${
                     active
-                      ? 'border-brand-green bg-brand-green/10 text-ink'
+                      ? 'border-brand-green bg-brand-green/10 text-fg'
                       : errors.membership
-                        ? 'border-brand-orange/60 bg-white text-zinc-600'
-                        : 'border-black/[0.1] bg-white text-zinc-600 hover:border-ink/30'
+                        ? 'border-brand-orange/60 bg-surface text-fg-muted'
+                        : 'border-border bg-surface text-fg-muted hover:border-fg/30'
                   }`}
                 >
                   {m.label}
@@ -268,7 +268,7 @@ export default function KontaktForm({
             value={f.betreff}
             onChange={(e) => set('betreff', e.target.value)}
             placeholder="Betreff deiner Nachricht"
-            className={`${fieldBase} ${errors.betreff ? 'border-brand-orange/60' : 'border-black/[0.08]'}`}
+            className={`${fieldBase} ${errors.betreff ? 'border-brand-orange/60' : 'border-border'}`}
           />
         </div>
 
@@ -280,7 +280,7 @@ export default function KontaktForm({
             onChange={(e) => set('name', e.target.value)}
             placeholder="Vor- und Nachname"
             autoComplete="name"
-            className={`${fieldBase} ${errors.name ? 'border-brand-orange/60' : 'border-black/[0.08]'}`}
+            className={`${fieldBase} ${errors.name ? 'border-brand-orange/60' : 'border-border'}`}
           />
         </div>
 
@@ -292,7 +292,7 @@ export default function KontaktForm({
             onChange={(e) => set('email', e.target.value)}
             placeholder="name@beispiel.de"
             autoComplete="email"
-            className={`${fieldBase} ${errors.email ? 'border-brand-orange/60' : 'border-black/[0.08]'}`}
+            className={`${fieldBase} ${errors.email ? 'border-brand-orange/60' : 'border-border'}`}
           />
         </div>
 
@@ -305,7 +305,7 @@ export default function KontaktForm({
               onChange={(e) => set('telefon', e.target.value)}
               placeholder="Optional"
               autoComplete="tel"
-              className={`${fieldBase} border-black/[0.08]`}
+              className={`${fieldBase} border-border`}
             />
           </div>
           <div>
@@ -315,7 +315,7 @@ export default function KontaktForm({
               value={f.kundennummer}
               onChange={(e) => set('kundennummer', e.target.value)}
               placeholder="Optional"
-              className={`${fieldBase} border-black/[0.08]`}
+              className={`${fieldBase} border-border`}
             />
           </div>
         </div>
@@ -327,7 +327,7 @@ export default function KontaktForm({
             onChange={(e) => set('nachricht', e.target.value)}
             rows={4}
             placeholder="Deine Nachricht an uns …"
-            className={`${fieldBase} resize-none ${errors.nachricht ? 'border-brand-orange/60' : 'border-black/[0.08]'}`}
+            className={`${fieldBase} resize-none ${errors.nachricht ? 'border-brand-orange/60' : 'border-border'}`}
           />
         </div>
 
@@ -339,14 +339,14 @@ export default function KontaktForm({
             error={!!errors.agbDatenschutz}
           >
             Durch das Absenden stimme ich der{' '}
-            <a href={policyUrl} target="_blank" rel="noreferrer" className="font-medium text-ink underline">
+            <a href={policyUrl} target="_blank" rel="noreferrer" className="font-medium text-fg underline">
               Datenschutzerklärung
             </a>{' '}
             zu.
           </Checkbox>
           <Checkbox checked={f.widerruf} onChange={(v) => set('widerruf', v)} error={!!errors.widerruf}>
             Ich habe die{' '}
-            <a href={widerrufUrl} target="_blank" rel="noreferrer" className="font-medium text-ink underline">
+            <a href={widerrufUrl} target="_blank" rel="noreferrer" className="font-medium text-fg underline">
               Widerrufsbelehrung
             </a>{' '}
             gelesen.
@@ -400,19 +400,19 @@ function Select({
         onChange={(e) => onChange(e.target.value)}
         disabled={disabled}
         className={`${fieldBase} appearance-none pr-9 disabled:cursor-not-allowed disabled:opacity-60 ${
-          value ? 'text-ink' : 'text-zinc-400'
-        } ${error ? 'border-brand-orange/60' : 'border-black/[0.08]'}`}
+          value ? 'text-fg' : 'text-fg-subtle'
+        } ${error ? 'border-brand-orange/60' : 'border-border'}`}
       >
         <option value="" disabled>
           {placeholder}
         </option>
         {options.map((o) => (
-          <option key={o.value} value={o.value} className="text-ink">
+          <option key={o.value} value={o.value} className="text-fg">
             {o.label}
           </option>
         ))}
       </select>
-      <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+      <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-subtle" />
     </div>
   )
 }
@@ -429,7 +429,7 @@ function Checkbox({
   children: ReactNode
 }) {
   return (
-    <label className="flex cursor-pointer items-start gap-2.5 text-xs leading-relaxed text-zinc-600">
+    <label className="flex cursor-pointer items-start gap-2.5 text-xs leading-relaxed text-fg-muted">
       <button
         type="button"
         role="checkbox"
@@ -439,8 +439,8 @@ function Checkbox({
           checked
             ? 'border-brand-green bg-brand-green text-white'
             : error
-              ? 'border-brand-orange/70 bg-white'
-              : 'border-black/20 bg-white'
+              ? 'border-brand-orange/70 bg-surface'
+              : 'border-fg/20 bg-surface'
         }`}
       >
         {checked && <Check className="h-3.5 w-3.5" />}

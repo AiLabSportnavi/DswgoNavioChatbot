@@ -2,8 +2,9 @@ import { useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import NavioChat from './NavioChat'
 import NavioMenuChat from './NavioMenuChat'
-import { Chat, Close, ArrowRight } from './icons'
+import { Chat, Close, ArrowRight, Sun, Moon } from './icons'
 import { getBot, type Chatbot } from '../data/bots'
+import { useTheme } from '../lib/useTheme'
 
 type View = 'closed' | 'card' | 'chat'
 
@@ -26,12 +27,15 @@ export default function ChatWidget({
   contained?: boolean
 } = {}) {
   const [view, setView] = useState<View>('closed')
+  const { theme, toggle: toggleTheme } = useTheme()
   const bot = botProp ?? getBot('navio')
   if (!bot) return null
 
   return (
     <div
-      className={`${contained ? 'absolute' : 'fixed'} bottom-6 right-6 z-40 flex flex-col items-end gap-3`}
+      className={`${theme === 'dark' ? 'theme-dark ' : ''}${
+        contained ? 'absolute' : 'fixed'
+      } bottom-6 right-6 z-40 flex flex-col items-end gap-3`}
     >
       <AnimatePresence mode="wait">
         {view === 'chat' ? (
@@ -49,6 +53,8 @@ export default function ChatWidget({
                 className="h-full"
                 onClose={() => setView('closed')}
                 privacyUrl={policyUrl}
+                theme={theme}
+                onToggleTheme={toggleTheme}
               />
             ) : (
               <NavioChat
@@ -56,6 +62,8 @@ export default function ChatWidget({
                 className="h-full"
                 onClose={() => setView('closed')}
                 privacyUrl={policyUrl}
+                theme={theme}
+                onToggleTheme={toggleTheme}
               />
             )}
           </motion.div>
@@ -66,7 +74,7 @@ export default function ChatWidget({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 16, scale: 0.96 }}
             transition={{ duration: 0.2, ease: 'easeOut' }}
-            className="w-[min(360px,calc(100vw-3rem))] origin-bottom-right overflow-hidden rounded-3xl border border-black/[0.06] bg-white soft-shadow-lg"
+            className="w-[min(360px,calc(100vw-3rem))] origin-bottom-right overflow-hidden rounded-3xl border border-border bg-surface text-fg soft-shadow-lg"
           >
             {/* greeting */}
             <div className="flex items-start gap-3 p-5">
@@ -74,25 +82,36 @@ export default function ChatWidget({
                 <bot.icon className="h-6 w-6" />
               </span>
               <div className="min-w-0 flex-1">
-                <div className="font-display text-base font-semibold text-ink">
+                <div className="font-display text-base font-semibold text-fg">
                   Hi, ich bin Navio 👋🏻
                 </div>
-                <p className="mt-1 text-sm leading-relaxed text-zinc-600">
+                <p className="mt-1 text-sm leading-relaxed text-fg-muted">
                   Dein Guide durch die Sportnavi Welt. Stell deine Fragen und bekomm
                   schnelle Antworten. 💚
                 </p>
-                <p className="mt-1.5 text-xs leading-relaxed text-zinc-400">
+                <p className="mt-1.5 text-xs leading-relaxed text-fg-subtle">
                   Your guide through the Sportnavi world — ask away and get answers fast.
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={() => setView('closed')}
-                aria-label="Schließen"
-                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-zinc-400 transition-colors hover:bg-black/5 hover:text-ink"
-              >
-                <Close className="h-4 w-4" />
-              </button>
+              <div className="flex shrink-0 items-center gap-1">
+                <button
+                  type="button"
+                  onClick={toggleTheme}
+                  aria-label={theme === 'dark' ? 'Heller Modus' : 'Dunkler Modus'}
+                  title={theme === 'dark' ? 'Heller Modus' : 'Dunkler Modus'}
+                  className="flex h-7 w-7 items-center justify-center rounded-full text-fg-subtle transition-colors hover:bg-fg/5 hover:text-fg"
+                >
+                  {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setView('closed')}
+                  aria-label="Schließen"
+                  className="flex h-7 w-7 items-center justify-center rounded-full text-fg-subtle transition-colors hover:bg-fg/5 hover:text-fg"
+                >
+                  <Close className="h-4 w-4" />
+                </button>
+              </div>
             </div>
 
             {/* CTA */}

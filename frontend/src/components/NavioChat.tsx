@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import { Info, Refresh, Close, Lock, Send, Check, ArrowRight } from './icons'
+import { Info, Refresh, Close, Lock, Send, Check, ArrowRight, Sun, Moon } from './icons'
 import { sendChat, MAX_MESSAGE_CHARS, type ChatTurn } from '../lib/api'
 import Markdown from './Markdown'
 import type { Chatbot } from '../data/bots'
+import type { Theme } from '../lib/useTheme'
 
 type Msg = {
   id: number
@@ -42,6 +43,8 @@ export default function NavioChat({
   privacyUrl,
   embedded = false,
   initialConsent = false,
+  theme,
+  onToggleTheme,
 }: {
   bot: Chatbot
   className?: string
@@ -55,6 +58,9 @@ export default function NavioChat({
   embedded?: boolean
   /** Skip the consent gate because the host already collected consent. */
   initialConsent?: boolean
+  /** Current colour theme + toggle, surfaced as a header button (own header only). */
+  theme?: Theme
+  onToggleTheme?: () => void
 }) {
   const notice = privacyNotice ?? bot.privacy.notice
   const policyUrl = privacyUrl ?? bot.privacy.url
@@ -120,8 +126,8 @@ export default function NavioChat({
 
   return (
     <div
-      className={`flex flex-col overflow-hidden bg-white ${
-        embedded ? '' : 'rounded-3xl border border-black/[0.06]'
+      className={`flex flex-col overflow-hidden bg-surface text-fg ${
+        embedded ? '' : 'rounded-3xl border border-border'
       } ${className}`}
     >
       {/* header — Sportnavi green (hidden when embedded; host provides it) */}
@@ -139,6 +145,17 @@ export default function NavioChat({
             Online
           </div>
         </div>
+        {onToggleTheme && (
+          <button
+            type="button"
+            onClick={onToggleTheme}
+            aria-label={theme === 'dark' ? 'Heller Modus' : 'Dunkler Modus'}
+            title={theme === 'dark' ? 'Heller Modus' : 'Dunkler Modus'}
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-white/15 transition-colors hover:bg-white/30"
+          >
+            {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          </button>
+        )}
         <button
           type="button"
           onClick={() => setShowInfo((v) => !v)}
@@ -172,23 +189,32 @@ export default function NavioChat({
       {showInfo ? (
         <div className="flex-1 space-y-4 overflow-y-auto p-5">
           <div>
-            <h3 className="font-display text-base font-semibold text-ink">About {bot.name}</h3>
-            <p className="mt-1.5 text-sm leading-relaxed text-zinc-600">{bot.tagline}</p>
+            <h3 className="font-display text-base font-semibold text-fg">Über {bot.name}</h3>
+            <p className="text-xs leading-relaxed text-fg-subtle">About {bot.name}</p>
+            <p className="mt-2 text-sm leading-relaxed text-fg-muted">
+              {bot.name} ist dein freundlicher Guide durch Sportnavi – Deutschlands
+              Firmenfitness-Netzwerk. Frag nach Angeboten, Mitgliedschaften, Partnern oder wie du
+              Sportnavi in dein Unternehmen holst.
+            </p>
+            <p className="mt-1.5 text-xs leading-relaxed text-fg-subtle">
+              {bot.name} is your friendly guide through Sportnavi — Germany’s corporate-fitness
+              network. Ask about offers, memberships, partners, or bringing Sportnavi to your company.
+            </p>
           </div>
           <ul className="space-y-2.5">
             {ADVANTAGES.map((a) => (
               <li key={a.de} className="flex items-start gap-2 text-sm">
-                <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-brand-green/20 text-ink">
+                <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-brand-green/20 text-fg">
                   <Check className="h-3 w-3" />
                 </span>
                 <span>
-                  <span className="text-zinc-700">{a.de}</span>
-                  <span className="block text-xs text-zinc-400">{a.en}</span>
+                  <span className="text-fg-muted">{a.de}</span>
+                  <span className="block text-xs text-fg-subtle">{a.en}</span>
                 </span>
               </li>
             ))}
           </ul>
-          <p className="text-xs text-zinc-400">
+          <p className="text-xs text-fg-subtle">
             Deine Eingaben werden gemäß unserer{' '}
             <a href={policyUrl} target="_blank" rel="noreferrer" className="underline">
               Datenschutzerklärung / Privacy Policy
@@ -198,24 +224,24 @@ export default function NavioChat({
           <button
             type="button"
             onClick={() => setShowInfo(false)}
-            className="rounded-full bg-ink px-4 py-2 text-sm lowercase text-white"
+            className="rounded-full bg-fg px-4 py-2 text-sm lowercase text-surface"
           >
             zurück zum Chat
           </button>
         </div>
       ) : !consented ? (
         <div className="flex-1 overflow-y-auto p-4">
-          <div className="rounded-2xl border border-black/[0.08] bg-white p-4 soft-shadow">
+          <div className="rounded-2xl border border-border bg-surface p-4 soft-shadow">
             <div className="flex items-center gap-2">
               <Lock className="h-4 w-4 text-brand-orange" />
-              <span className="font-display text-sm font-semibold text-ink">Datenschutzhinweis</span>
+              <span className="font-display text-sm font-semibold text-fg">Datenschutzhinweis</span>
             </div>
-            <p className="mt-3 text-sm leading-relaxed text-zinc-600">{notice}</p>
+            <p className="mt-3 text-sm leading-relaxed text-fg-muted">{notice}</p>
             <a
               href={policyUrl}
               target="_blank"
               rel="noreferrer"
-              className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-ink underline underline-offset-2 transition-colors hover:text-brand-green"
+              className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-fg underline underline-offset-2 transition-colors hover:text-brand-green"
             >
               Zur Datenschutzerklärung / Privacy Policy
               <ArrowRight className="h-3.5 w-3.5" />
@@ -236,7 +262,7 @@ export default function NavioChat({
               <button
                 type="button"
                 onClick={() => setDeclined(true)}
-                className="flex-1 rounded-full border border-ink/15 px-4 py-2 text-sm text-ink transition-colors hover:border-ink/40"
+                className="flex-1 rounded-full border border-border px-4 py-2 text-sm text-fg transition-colors hover:border-fg/40"
               >
                 Ablehnen
               </button>
@@ -254,12 +280,12 @@ export default function NavioChat({
                 transition={{ duration: 0.2 }}
                 className={
                   m.role === 'user'
-                    ? 'ml-auto max-w-[80%] rounded-2xl rounded-tr-sm bg-ink px-3.5 py-2.5 text-sm whitespace-pre-wrap text-white'
+                    ? 'ml-auto max-w-[80%] rounded-2xl rounded-tr-sm bg-user-bubble px-3.5 py-2.5 text-sm whitespace-pre-wrap text-user-bubble-fg'
                     : m.role === 'error'
                       ? 'max-w-[88%] rounded-2xl rounded-tl-sm border border-red-200 bg-red-50 px-3.5 py-2.5 text-sm text-red-700'
                       : m.intro
-                        ? 'max-w-[85%] rounded-2xl rounded-tl-sm bg-bg-base px-3.5 py-2.5 text-sm whitespace-pre-wrap text-ink'
-                        : 'max-w-[85%] rounded-2xl rounded-tl-sm bg-bg-base px-3.5 py-2.5 text-ink'
+                        ? 'max-w-[85%] rounded-2xl rounded-tl-sm bg-surface-muted px-3.5 py-2.5 text-sm whitespace-pre-wrap text-fg'
+                        : 'max-w-[85%] rounded-2xl rounded-tl-sm bg-surface-muted px-3.5 py-2.5 text-fg'
                 }
               >
                 {/* AI replies render as markdown (bold, links, lists, tables). The
@@ -270,11 +296,11 @@ export default function NavioChat({
           </AnimatePresence>
 
           {loading && (
-            <div className="flex max-w-[60%] items-center gap-1 rounded-2xl rounded-tl-sm bg-bg-base px-4 py-3">
+            <div className="flex max-w-[60%] items-center gap-1 rounded-2xl rounded-tl-sm bg-surface-muted px-4 py-3">
               {[0, 1, 2].map((i) => (
                 <motion.span
                   key={i}
-                  className="h-1.5 w-1.5 rounded-full bg-zinc-400"
+                  className="h-1.5 w-1.5 rounded-full bg-brand-green"
                   animate={{ opacity: [0.3, 1, 0.3] }}
                   transition={{ duration: 1, repeat: Infinity, delay: i * 0.18 }}
                 />
@@ -289,7 +315,7 @@ export default function NavioChat({
                   key={q}
                   type="button"
                   onClick={() => send(q)}
-                  className="rounded-full border border-ink/15 bg-white px-3 py-1 text-xs text-zinc-600 transition-colors hover:border-ink/40 hover:text-ink"
+                  className="rounded-full border border-border bg-surface px-3 py-1 text-xs text-fg-muted transition-colors hover:border-fg/40 hover:text-fg"
                 >
                   {q}
                 </button>
@@ -301,7 +327,7 @@ export default function NavioChat({
 
       {/* input */}
       {!showInfo && (
-        <div className="border-t border-black/[0.05]">
+        <div className="border-t border-border">
           <form
             onSubmit={(e) => {
               e.preventDefault()
@@ -315,7 +341,7 @@ export default function NavioChat({
             disabled={!consented}
             maxLength={MAX_MESSAGE_CHARS}
             placeholder={consented ? 'Frage Navio …' : 'Bitte Datenschutz akzeptieren'}
-            className="flex-1 rounded-full bg-bg-base px-4 py-2 text-sm text-ink placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-brand-green/40 disabled:cursor-not-allowed"
+            className="flex-1 rounded-full bg-surface-muted px-4 py-2 text-sm text-fg placeholder:text-fg-subtle focus:outline-none focus:ring-2 focus:ring-brand-green/40 disabled:cursor-not-allowed"
           />
           <button
             type="submit"
@@ -331,12 +357,12 @@ export default function NavioChat({
 
       {/* always-visible Datenschutz / Privacy Policy link (host provides it when embedded) */}
       {!embedded && (
-        <div className="border-t border-black/[0.04] bg-white px-4 py-2 text-center">
+        <div className="border-t border-border bg-surface px-4 py-2 text-center">
           <a
             href={policyUrl}
             target="_blank"
             rel="noreferrer"
-            className="text-[11px] text-zinc-400 underline transition-colors hover:text-ink"
+            className="text-[11px] text-fg-subtle underline transition-colors hover:text-fg"
           >
             Datenschutz · Privacy Policy
           </a>

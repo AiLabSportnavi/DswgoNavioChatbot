@@ -40,7 +40,7 @@ export default function NavioMenu({
 
   return (
     <div className="flex-1 overflow-y-auto px-4 py-5">
-      <p className="px-1 text-sm leading-relaxed text-zinc-600">
+      <p className="px-1 text-sm leading-relaxed text-fg-muted">
         Wie können wir dir helfen? Wähle einfach aus 👇
       </p>
 
@@ -67,7 +67,7 @@ export default function NavioMenu({
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.25, delay: i * 0.07 }}
               whileTap={{ scale: 0.985 }}
-              className={`group flex items-center gap-4 rounded-2xl border border-black/[0.08] bg-white p-4 text-left soft-shadow transition-all duration-200 hover:-translate-y-0.5 ${accent.hover}`}
+              className={`group flex items-center gap-4 rounded-2xl border border-border bg-surface p-4 text-left soft-shadow transition-all duration-200 hover:-translate-y-0.5 ${accent.hover}`}
             >
               <span
                 className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl transition-colors ${accent.tile}`}
@@ -75,13 +75,13 @@ export default function NavioMenu({
                 <o.icon className="h-6 w-6" />
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block font-display text-base font-semibold text-ink">
+                <span className="block font-display text-base font-semibold text-fg">
                   {o.title}
                 </span>
-                <span className="mt-0.5 block text-sm leading-snug text-zinc-500">{o.body}</span>
+                <span className="mt-0.5 block text-sm leading-snug text-fg-muted">{o.body}</span>
               </span>
               <span
-                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-bg-base text-zinc-400 transition-colors group-hover:text-white ${accent.ring}`}
+                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-surface-muted text-fg-subtle transition-colors group-hover:text-white ${accent.ring}`}
               >
                 <ArrowRight className="h-4 w-4" />
               </span>
@@ -90,7 +90,7 @@ export default function NavioMenu({
         })}
       </div>
 
-      <p className="mt-5 px-1 text-xs leading-relaxed text-zinc-400">
+      <p className="mt-5 px-1 text-xs leading-relaxed text-fg-subtle">
         {bot.name} beantwortet Fragen rund um Sportnavi und leitet dich bei Bedarf an unser Team
         weiter.
       </p>

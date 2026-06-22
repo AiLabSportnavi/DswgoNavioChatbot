@@ -23,36 +23,36 @@ export default function Markdown({ children }: { children: string }) {
               {...props}
               target="_blank"
               rel="noreferrer"
-              className="font-medium text-brand-green underline underline-offset-2 hover:text-ink"
+              className="font-medium text-brand-green underline underline-offset-2 hover:text-fg"
             />
           ),
           ul: ({ ...props }) => <ul {...props} className="list-disc space-y-1 pl-5" />,
           ol: ({ ...props }) => <ol {...props} className="list-decimal space-y-1 pl-5" />,
-          li: ({ ...props }) => <li {...props} className="marker:text-zinc-400" />,
-          strong: ({ ...props }) => <strong {...props} className="font-semibold text-ink" />,
+          li: ({ ...props }) => <li {...props} className="marker:text-fg-subtle" />,
+          strong: ({ ...props }) => <strong {...props} className="font-semibold text-fg" />,
           code: ({ ...props }) => (
-            <code {...props} className="rounded bg-black/[0.06] px-1 py-0.5 text-[0.85em]" />
+            <code {...props} className="rounded bg-fg/10 px-1 py-0.5 text-[0.85em]" />
           ),
           // Tables: keep them inside the bubble — scroll horizontally if too wide
           // for the chat instead of overflowing the widget.
           table: ({ ...props }) => (
-            <div className="my-1 max-w-full overflow-x-auto rounded-lg border border-black/10">
+            <div className="my-1 max-w-full overflow-x-auto rounded-lg border border-border">
               <table {...props} className="w-full border-collapse text-xs" />
             </div>
           ),
-          thead: ({ ...props }) => <thead {...props} className="bg-black/[0.04]" />,
+          thead: ({ ...props }) => <thead {...props} className="bg-fg/5" />,
           th: ({ ...props }) => (
             <th
               {...props}
-              className="border-b border-black/10 px-2 py-1.5 text-left align-top font-semibold text-ink"
+              className="border-b border-border px-2 py-1.5 text-left align-top font-semibold text-fg"
             />
           ),
           td: ({ ...props }) => (
-            <td {...props} className="border-b border-black/[0.06] px-2 py-1.5 align-top" />
+            <td {...props} className="border-b border-border px-2 py-1.5 align-top" />
           ),
-          h1: ({ ...props }) => <p {...props} className="font-semibold text-ink" />,
-          h2: ({ ...props }) => <p {...props} className="font-semibold text-ink" />,
-          h3: ({ ...props }) => <p {...props} className="font-semibold text-ink" />,
+          h1: ({ ...props }) => <p {...props} className="font-semibold text-fg" />,
+          h2: ({ ...props }) => <p {...props} className="font-semibold text-fg" />,
+          h3: ({ ...props }) => <p {...props} className="font-semibold text-fg" />,
         }}
       >
         {children}

@@ -6,11 +6,40 @@
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Outfit", ui-sans-serif, system-ui, sans-serif;
 
-  /* Official Sportnavi palette */
+  /* Official Sportnavi palette (brand constants — identical in both themes) */
   --color-brand-green: #95c11e;
   --color-brand-orange: #ec6607;
-  --color-bg-base: #EDEEF5;
   --color-ink: #1a1a1a;
+
+  /* Semantic theme tokens — LIGHT mode defaults. Components reference these
+     (bg-surface, text-fg, …) instead of raw hex so dark mode is a token swap.
+     Dark overrides live in the .theme-dark block below. */
+  --color-surface: #ffffff;        /* panels, cards, sheets        */
+  --color-surface-muted: #efefef;  /* bot bubbles, inputs (team-approved grey) */
+  --color-fg: #1a1a1a;             /* primary text                 */
+  --color-fg-muted: #52525b;       /* secondary text (zinc-600)    */
+  --color-fg-subtle: #71717a;      /* tertiary text / hints        */
+  --color-border: rgba(0, 0, 0, 0.08);
+  --color-user-bubble: #efefef;    /* outgoing (user) message bg (team-approved grey) */
+  --color-user-bubble-fg: #1a1a1a;
+
+  /* Back-compat alias for any remaining bg-bg-base usage */
+  --color-bg-base: #efefef;
+}
+
+/* Sportnavi dark mode — scoped to whatever element carries .theme-dark.
+   Tonal (not inverted) per WCAG/Material dark-mode guidance; every fg/bg pair
+   below clears 4.5:1 (primary) or 3:1 (secondary) against its surface. */
+.theme-dark {
+  --color-surface: #1a1a1a;
+  --color-surface-muted: #2b2b2b;
+  --color-fg: #f4f4f5;
+  --color-fg-muted: #b8b8c0;
+  --color-fg-subtle: #8c8c94;
+  --color-border: rgba(255, 255, 255, 0.14);
+  --color-user-bubble: #efefef;
+  --color-user-bubble-fg: #1a1a1a;
+  --color-bg-base: #2b2b2b;
 }
 
 @layer base {
@@ -25,4 +54,15 @@
 
 @utility soft-shadow-lg {
   box-shadow: 0 24px 60px -20px rgba(26, 26, 26, 0.18);
+}
+
+/* Accessibility: honour the OS "reduce motion" setting (skill §1 reduced-motion). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
 }

@@ -166,6 +166,11 @@ if ($LASTEXITCODE -ne 0) { Die "Frontend image build failed." }
 Write-Host "==> Deploying frontend ($FrontendName)..." -ForegroundColor Cyan
 gcloud run deploy $FrontendName --image $FrontendImage --region $Region --port 8080 --allow-unauthenticated --quiet
 if ($LASTEXITCODE -ne 0) { Die "Frontend deploy failed (the previous version stays live)." }
+# Force 100% of traffic onto the revision we just deployed. Without this, if traffic
+# was ever pinned to a specific revision, every deploy silently lands at 0% traffic
+# and the live site never updates.
+gcloud run services update-traffic $FrontendName --region $Region --to-latest --quiet
+if ($LASTEXITCODE -ne 0) { Die "Routing frontend traffic to the new revision failed." }
 $FrontendUrl = (gcloud run services describe $FrontendName --region $Region --format="value(status.url)").Trim()
 Write-Host "    frontend live at  $FrontendUrl" -ForegroundColor Green
 
